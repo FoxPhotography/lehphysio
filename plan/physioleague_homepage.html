@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <title>PhysioLeague — واجهة المنصة التفاعلية</title>
+    <meta name="description" content="العرض الحي للواجهة الرئيسية لمنصة فيزيو ليج. تفاعل مع الحلقات واستكشف لوحة المتصدرين ونظام النقاط.">
+    
+    <!-- Google Fonts Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Tabler Icons CSS CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            -webkit-tap-highlight-color: rgba(232, 160, 69, 0.2);
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: #0f0a07;
+            color: #f5e6cc;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .pl-root {
+            width: 100%;
+            margin: 0 auto;
+            position: relative;
+            padding-bottom: 2rem;
+        }
+
+        /* Nav Bar styles */
+        .pl-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            border-bottom: 0.5px solid #2e1a0e;
+            background: rgba(15, 10, 7, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .pl-logo {
+            font-size: 22px;
+            font-weight: 900;
+            color: #e8a045;
+            letter-spacing: 1px;
+            text-decoration: none;
+        }
+
+        .pl-logo span { color: #f5e6cc; }
+
+        .pl-nav-links {
+            display: flex;
+            gap: 1.5rem;
+            list-style: none;
+            margin: 0; padding: 0;
+            align-items: center;
+        }
+
+        .pl-nav-links a {
+            color: #8a6a4a;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .pl-nav-links a:hover { color: #e8a045; }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .pl-btn-login {
+            background: transparent;
+            border: 1px solid #c8621a;
+            color: #e8a045;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .pl-btn-login:hover { background: #1c1208; transform: translateY(-1px); }
+
+        .pl-btn-plan {
+            background: transparent;
+            border: 1px solid #e8a045;
+            color: #e8a045;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            min-height: 40px;
+            box-shadow: 0 0 10px rgba(232, 160, 69, 0.05);
+        }
+
+        .pl-btn-plan:hover { 
+            background: rgba(232, 160, 69, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Hero Area */
+        .pl-hero {
+            padding: 5rem 2rem 4rem;
+            text-align: center;
+            position: relative;
+            background: radial-gradient(circle at center, rgba(232, 160, 69, 0.08) 0%, transparent 60%);
+        }
+
+        .pl-hero-badge {
+            display: inline-block;
+            background: #1c1208;
+            border: 1px solid #2e1a0e;
+            color: #e8a045;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 6px 16px;
+            border-radius: 20px;
+            margin-bottom: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .pl-hero h1 {
+            font-size: 46px;
+            font-weight: 900;
+            line-height: 1.3;
+            margin: 0 0 1.25rem;
+            color: #f5e6cc;
+        }
+
+        .pl-hero h1 span { color: #e8a045; }
+
+        .pl-hero p {
+            font-size: 17px;
+            color: #8a6a4a;
+            max-width: 550px;
+            margin: 0 auto 2.5rem;
+            line-height: 1.8;
+        }
+
+        .pl-hero-btns {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .pl-btn-primary {
+            background: #c8621a;
+            color: #f5e6cc;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            min-height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(200, 98, 26, 0.25);
+        }
+
+        .pl-btn-primary:hover { 
+            background: #e8a045; 
+            color: #0f0a07; 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(232, 160, 69, 0.35);
+        }
+
+        .pl-btn-ghost {
+            background: transparent;
+            color: #8a6a4a;
+            border: 1px solid #2e1a0e;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            min-height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .pl-btn-ghost:hover { color: #f5e6cc; border-color: #8a6a4a; }
+
+        /* Stats Bar */
+        .pl-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: #2e1a0e;
+            border-top: 1px solid #2e1a0e;
+            border-bottom: 1px solid #2e1a0e;
+            margin: 2rem 0 3rem;
+        }
+
+        .pl-stat {
+            background: #0f0a07;
+            padding: 2rem 1.5rem;
+            text-align: center;
+        }
+
+        .pl-stat-num {
+            font-size: 32px;
+            font-weight: 900;
+            color: #e8a045;
+            line-height: 1;
+            font-family: sans-serif;
+        }
+
+        .pl-stat-label {
+            font-size: 14px;
+            color: #8a6a4a;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        /* Sections General */
+        .pl-section {
+            padding: 2.5rem 4rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .pl-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #c8621a;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .pl-section-h2 {
+            font-size: 26px;
+            font-weight: 900;
+            color: #f5e6cc;
+            margin: 0 0 2rem;
+        }
+
+        /* Episodes Grid */
+        .pl-episodes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .pl-ep-card {
+            background: #1c1208;
+            border: 1px solid #2e1a0e;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pl-ep-card:hover { 
+            border-color: #e8a045; 
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(232, 160, 69, 0.1);
+        }
+
+        .pl-ep-thumb {
+            height: 140px;
+            background: linear-gradient(135deg, #2e1a0e, #1c1208);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .pl-ep-num {
+            font-size: 40px;
+            font-weight: 900;
+            color: #2e1a0e;
+            font-family: sans-serif;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .pl-ep-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #c8621a;
+            color: #f5e6cc;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .pl-ep-info {
+            padding: 1.25rem;
+        }
+
+        .pl-ep-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #f5e6cc;
+            margin-bottom: 8px;
+            line-height: 1.5;
+            min-height: 45px;
+        }
+
+        .pl-ep-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid rgba(46, 26, 14, 0.5);
+            padding-top: 8px;
+            margin-top: 4px;
+        }
+
+        .pl-ep-xp {
+            font-size: 12px;
+            color: #e8a045;
+            font-weight: 900;
+        }
+
+        .pl-ep-date {
+            font-size: 12px;
+            color: #8a6a4a;
+            font-weight: 600;
+        }
+
+        /* Leaderboard block */
+        .pl-leaderboard {
+            background: #1c1208;
+            border: 1px solid #2e1a0e;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .pl-lb-tabs {
+            display: flex;
+            border-bottom: 1px solid #2e1a0e;
+            background: rgba(12, 7, 4, 0.4);
+        }
+
+        .pl-lb-tab {
+            flex: 1;
+            padding: 14px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #8a6a4a;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            font-family: 'Cairo', sans-serif;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .pl-lb-tab:hover {
+            color: #f5e6cc;
+        }
+
+        .pl-lb-tab.active {
+            color: #e8a045;
+            border-bottom: 3px solid #c8621a;
+            background: rgba(28, 18, 8, 0.5);
+        }
+
+        .pl-lb-list {
+            display: flex;
+            flex-direction: column;
+            animation: fadeInList 0.3s ease-out;
+        }
+
+        @keyframes fadeInList {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pl-lb-row {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            gap: 1.25rem;
+            border-bottom: 0.5px solid #2e1a0e;
+            transition: background-color 0.2s ease;
+        }
+
+        .pl-lb-row:last-child { border-bottom: none; }
+
+        .pl-lb-row:hover {
+            background-color: rgba(232, 160, 69, 0.02);
+        }
+
+        .pl-lb-rank {
+            font-size: 16px;
+            font-weight: 900;
+            color: #8a6a4a;
+            width: 28px;
+            text-align: center;
+            flex-shrink: 0;
+            font-family: sans-serif;
+        }
+
+        .pl-lb-rank.gold { color: #e8a045; }
+        .pl-lb-rank.silver { color: #c0c0c0; }
+        .pl-lb-rank.bronze { color: #c8621a; }
+
+        .pl-lb-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2e1a0e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #e8a045;
+            flex-shrink: 0;
+            border: 1px solid rgba(232, 160, 69, 0.1);
+        }
+
+        .pl-lb-info { flex: 1; min-width: 0; }
+
+        .pl-lb-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #f5e6cc;
+        }
+
+        .pl-lb-sub {
+            font-size: 12px;
+            color: #8a6a4a;
+            margin-top: 2px;
+            font-weight: 600;
+        }
+
+        .pl-lb-xp {
+            font-size: 16px;
+            font-weight: 900;
+            color: #e8a045;
+            flex-shrink: 0;
+            font-family: sans-serif;
+        }
+
+        /* XP System Section */
+        .pl-xp-section {
+            padding: 3rem 4rem;
+            background: #0a0705;
+            border-top: 1px solid #2e1a0e;
+            border-bottom: 1px solid #2e1a0e;
+        }
+
+        .pl-xp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .pl-xp-card {
+            background: #1c1208;
+            border: 1px solid #2e1a0e;
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .pl-xp-card:hover {
+            border-color: #c8621a;
+            box-shadow: 0 4px 15px rgba(200, 98, 26, 0.1);
+        }
+
+        .pl-xp-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: #2e1a0e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 22px;
+            color: #e8a045;
+            border: 0.5px solid rgba(232, 160, 69, 0.15);
+        }
+
+        .pl-xp-label {
+            font-size: 12px;
+            color: #8a6a4a;
+            line-height: 1.4;
+            font-weight: 600;
+        }
+
+        .pl-xp-val {
+            font-size: 18px;
+            font-weight: 900;
+            color: #e8a045;
+            font-family: sans-serif;
+        }
+
+        /* CTA segment */
+        .pl-cta {
+            padding: 4rem 2rem;
+            text-align: center;
+            background: #1c1208;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pl-cta h2 {
+            font-size: 32px;
+            font-weight: 900;
+            color: #f5e6cc;
+            margin-bottom: 0.75rem;
+        }
+
+        .pl-cta p {
+            font-size: 16px;
+            color: #8a6a4a;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        .pl-divider {
+            height: 1px;
+            background: #2e1a0e;
+            margin: 0;
+        }
+
+        /* ---------------- MOBILE RESPONSIVE BOTTOM BAR ---------------- */
+        .pl-bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(15, 10, 7, 0.92);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-top: 1px solid #2e1a0e;
+            z-index: 999;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .pl-bottom-nav-item {
+            flex: 1;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #8a6a4a;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 700;
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            gap: 2px;
+            transition: color 0.2s ease;
+            text-decoration: none;
+        }
+
+        .pl-bottom-nav-item i {
+            font-size: 20px;
+        }
+
+        .pl-bottom-nav-item.active {
+            color: #e8a045;
+        }
+
+        /* Mobile specific styling overrides */
+        @media (max-width: 768px) {
+            .pl-nav {
+                padding: 1rem;
+            }
+
+            .pl-nav-links {
+                display: none; /* Hide standard nav text links */
+            }
+
+            .nav-actions {
+                gap: 0.5rem;
+            }
+
+            .pl-btn-login, .pl-btn-plan {
+                font-size: 12px;
+                padding: 6px 12px;
+                min-height: 36px;
+            }
+
+            .pl-hero {
+                padding: 3.5rem 1rem 3rem;
+            }
+
+            .pl-hero h1 {
+                font-size: 32px;
+            }
+
+            .pl-hero p {
+                font-size: 14px;
+                margin-bottom: 2rem;
+            }
+
+            .pl-hero-btns {
+                flex-direction: column;
+                width: 100%;
+                gap: 0.75rem;
+            }
+
+            .pl-btn-primary, .pl-btn-ghost {
+                width: 100%;
+                font-size: 14px;
+                padding: 10px 20px;
+                min-height: 44px;
+            }
+
+            .pl-stats {
+                grid-template-columns: repeat(3, 1fr); /* Force 3 columns row layout */
+                margin-top: 1rem;
+                margin-bottom: 2rem;
+                background: #2e1a0e;
+                gap: 1px;
+            }
+
+            .pl-stat {
+                padding: 1rem 0.5rem;
+            }
+
+            .pl-stat-num {
+                font-size: 20px;
+            }
+
+            .pl-stat-label {
+                font-size: 11px;
+                margin-top: 4px;
+            }
+
+            .pl-section {
+                padding: 2rem 1.25rem;
+            }
+
+            .pl-section-h2 {
+                font-size: 22px;
+            }
+
+            .pl-episodes {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .pl-ep-thumb {
+                height: 130px;
+            }
+
+            .pl-lb-row {
+                padding: 12px 10px;
+                gap: 8px;
+            }
+
+            .pl-lb-rank {
+                font-size: 13px;
+                width: 20px;
+            }
+
+            .pl-lb-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
+            }
+
+            .pl-lb-name {
+                font-size: 13px;
+            }
+
+            .pl-lb-sub {
+                font-size: 11px;
+            }
+
+            .pl-lb-xp {
+                font-size: 14px;
+            }
+
+            .pl-xp-section {
+                padding: 2rem 1.25rem;
+            }
+
+            .pl-xp-grid {
+                grid-template-columns: 1fr 1fr; /* 2 columns grid on mobile for compactness */
+                gap: 0.75rem;
+            }
+
+            .pl-xp-card {
+                padding: 10px;
+                gap: 8px;
+            }
+
+            .pl-xp-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+
+            .pl-xp-val {
+                font-size: 15px;
+            }
+
+            .pl-xp-label {
+                font-size: 10px;
+            }
+
+            .pl-cta {
+                padding: 3rem 1.25rem;
+            }
+
+            .pl-cta h2 {
+                font-size: 24px;
+            }
+
+            .pl-cta p {
+                font-size: 14px;
+            }
+
+            .pl-root {
+                padding-bottom: 80px; /* space for sticky bottom nav */
+            }
+
+            /* Display bottom bar on mobile screens */
+            .pl-bottom-nav {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="pl-root">
+
+    <!-- Top Navigation Bar -->
+    <nav class="pl-nav">
+        <a href="#" class="pl-logo">Physio<span>League</span></a>
+        
+        <ul class="pl-nav-links">
+            <li><a href="#episodes"><i class="ti ti-video"></i> الحلقات</a></li>
+            <li><a href="#leaderboard"><i class="ti ti-trophy"></i> المتصدرين</a></li>
+            <li><a href="#xp-system"><i class="ti ti-bolt"></i> طرق كسب الـ XP</a></li>
+            <li><a href="index.html" style="color: #e8a045;"><i class="ti ti-file-text"></i> خطة المشروع التفاعلية</a></li>
+        </ul>
+        
+        <div class="nav-actions">
+            <a href="index.html" class="pl-btn-plan" title="عرض خطة المشروع والمحاكي التفاعلي">📋 الخطة والمحاكي</a>
+            <button class="pl-btn-login" onclick="alert(document.dir === 'rtl' ? 'تمت محاكاة تسجيل الدخول بنجاح!' : 'Simulated login successfully!')">تسجيل دخول</button>
+        </div>
+    </nav>
+
+    <!-- Mobile Sticky Bottom Nav Bar -->
+    <div class="pl-bottom-nav">
+        <a href="#" class="pl-bottom-nav-item active" id="m-nav-home">
+            <i class="ti ti-smart-home"></i>
+            <span>الرئيسية</span>
+        </a>
+        <a href="#episodes" class="pl-bottom-nav-item" id="m-nav-episodes">
+            <i class="ti ti-video"></i>
+            <span>الحلقات</span>
+        </a>
+        <a href="#leaderboard" class="pl-bottom-nav-item" id="m-nav-leaderboard">
+            <i class="ti ti-trophy"></i>
+            <span>المتصدرين</span>
+        </a>
+        <a href="#xp-system" class="pl-bottom-nav-item" id="m-nav-xp">
+            <i class="ti ti-bolt"></i>
+            <span>الـ XP</span>
+        </a>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="pl-hero">
+        <div class="pl-hero-badge">🏆 الموسم الأول — PT Community</div>
+        <h1>تفاعل، اكسب <span>XP</span><br>وابقى في القمة</h1>
+        <p>شاهد الحلقات، ادخل الأكواد السرية، وتنافس مع زملاءك على الـ Leaderboard لترقية رتبتك</p>
+        <div class="pl-hero-btns">
+            <button class="pl-btn-primary" onclick="alert('شاشات التسجيل وتفعيل الحساب متوفرة في المحاكي بالكامل!')">انضم دلوقتي — مجاناً</button>
+            <a href="#episodes" class="pl-btn-ghost">شوف الحلقات</a>
+        </div>
+    </div>
+
+    <!-- Stats Row Grid (Fully optimized for desktop/mobile) -->
+    <div class="pl-stats">
+        <div class="pl-stat">
+            <div class="pl-stat-num">1,240</div>
+            <div class="pl-stat-label">عضو نشيط</div>
+        </div>
+        <div class="pl-stat">
+            <div class="pl-stat-num">13</div>
+            <div class="pl-stat-label">حلقة منزّلة</div>
+        </div>
+        <div class="pl-stat">
+            <div class="pl-stat-num">48K</div>
+            <div class="pl-stat-label">XP مكتسبة</div>
+        </div>
+    </div>
+
+    <!-- Episodes Grid -->
+    <div class="pl-section" id="episodes">
+        <div class="pl-section-title">أحدث المحتوى</div>
+        <div class="pl-section-h2">الحلقات الأخيرة</div>
+        <div class="pl-episodes">
+            <!-- Card 1 -->
+            <div class="pl-ep-card" onclick="alert('يمكنك مشاهدة الحلقة وحل الكويز تفاعلياً من المحاكي في الصفحة الرئيسية!')">
+                <div class="pl-ep-thumb">
+                    <span class="pl-ep-num">١٣</span>
+                    <span class="pl-ep-badge">جديد</span>
+                </div>
+                <div class="pl-ep-info">
+                    <div class="pl-ep-title">الكتلة العضلية وإعادة التأهيل</div>
+                    <div class="pl-ep-meta">
+                        <span class="pl-ep-xp">+100 XP</span>
+                        <span class="pl-ep-date">منذ يومين</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Card 2 -->
+            <div class="pl-ep-card" onclick="alert('افتح المحاكي التفاعلي لتجربة الأكواد والكويزات.')">
+                <div class="pl-ep-thumb">
+                    <span class="pl-ep-num">١٢</span>
+                </div>
+                <div class="pl-ep-info">
+                    <div class="pl-ep-title">اعتماد الجودة المشروط في PT</div>
+                    <div class="pl-ep-meta">
+                        <span class="pl-ep-xp">+100 XP</span>
+                        <span class="pl-ep-date">منذ أسبوع</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Card 3 -->
+            <div class="pl-ep-card" onclick="alert('افتح المحاكي التفاعلي لتجربة الأكواد والكويزات.')">
+                <div class="pl-ep-thumb">
+                    <span class="pl-ep-num">١١</span>
+                </div>
+                <div class="pl-ep-info">
+                    <div class="pl-ep-title">العلاج الطبيعي الرياضي وتأهيل الركبة</div>
+                    <div class="pl-ep-meta">
+                        <span class="pl-ep-xp">+100 XP</span>
+                        <span class="pl-ep-date">منذ أسبوعين</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="pl-divider"></div>
+
+    <!-- Leaderboard Block (Fully Interactive Tabs) -->
+    <div class="pl-section" id="leaderboard">
+        <div class="pl-section-title">المنافسة الأسبوعية</div>
+        <div class="pl-section-h2">Leaderboard المتصدرين</div>
+        
+        <div class="pl-leaderboard">
+            <div class="pl-lb-tabs">
+                <button class="pl-lb-tab active" id="tab-weekly" onclick="switchTab('weekly')">أسبوعي</button>
+                <button class="pl-lb-tab" id="tab-alltime" onclick="switchTab('alltime')">كل الوقت</button>
+                <button class="pl-lb-tab" id="tab-batch" onclick="switchTab('batch')">دفعتي (PT 13)</button>
+            </div>
+            
+            <div class="pl-lb-list" id="leaderboard-list">
+                <!-- Loaded dynamically by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Ways to earn XP Section (Icons loaded via CDN) -->
+    <div class="pl-xp-section" id="xp-system">
+        <div class="pl-section-title">ضاعف نقاطك</div>
+        <div class="pl-section-h2">ازاي تجمع XP؟</div>
+        
+        <div class="pl-xp-grid">
+            <div class="pl-xp-card">
+                <div class="pl-xp-icon"><i class="ti ti-key"></i></div>
+                <div>
+                    <div class="pl-xp-val">+100</div>
+                    <div class="pl-xp-label">كود الحلقة السري</div>
+                </div>
+            </div>
+            <div class="pl-xp-card">
+                <div class="pl-xp-icon"><i class="ti ti-help"></i></div>
+                <div>
+                    <div class="pl-xp-val">+150</div>
+                    <div class="pl-xp-label">حل كويز الحلقة صح</div>
+                </div>
+            </div>
+            <div class="pl-xp-card">
+                <div class="pl-xp-icon"><i class="ti ti-brand-instagram"></i></div>
+                <div>
+                    <div class="pl-xp-val">+50</div>
+                    <div class="pl-xp-label">كود منشور السوشيال</div>
+                </div>
+            </div>
+            <div class="pl-xp-card">
+                <div class="pl-xp-icon"><i class="ti ti-thumb-up"></i></div>
+                <div>
+                    <div class="pl-xp-val">+5</div>
+                    <div class="pl-xp-label">لايك على المنشور</div>
+                </div>
+            </div>
+            <div class="pl-xp-card">
+                <div class="pl-xp-icon"><i class="ti ti-message-2"></i></div>
+                <div>
+                    <div class="pl-xp-val">+15</div>
+                    <div class="pl-xp-label">تعليق على الحلقة</div>
+                </div>
+            </div>
+            <div class="pl-xp-card">
+                <div class="pl-xp-icon"><i class="ti ti-share"></i></div>
+                <div>
+                    <div class="pl-xp-val">+25</div>
+                    <div class="pl-xp-label">شير للينك المنشور</div>
+                </div>
+            </div>
+            <div class="pl-xp-card">
+                <div class="pl-xp-icon"><i class="ti ti-login"></i></div>
+                <div>
+                    <div class="pl-xp-val">+10</div>
+                    <div class="pl-xp-label">تسجيل دخول يومي</div>
+                </div>
+            </div>
+            <div class="pl-xp-card">
+                <div class="pl-xp-icon"><i class="ti ti-flame"></i></div>
+                <div>
+                    <div class="pl-xp-val">+70</div>
+                    <div class="pl-xp-label">سلسلة 7 أيام متتالية</div>
+                </div>
+            </div>
+            <div class="pl-xp-card">
+                <div class="pl-xp-icon"><i class="ti ti-users"></i></div>
+                <div>
+                    <div class="pl-xp-val">+100</div>
+                    <div class="pl-xp-label">دعوة صديق جديد</div>
+                </div>
+            </div>
+            <div class="pl-xp-card">
+                <div class="pl-xp-icon"><i class="ti ti-device-gamepad-2"></i></div>
+                <div>
+                    <div class="pl-xp-val">+50</div>
+                    <div class="pl-xp-label">لعب لعبة تفاعلية</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="pl-cta">
+        <h2>مستني إيه؟</h2>
+        <p>انضم لأكتر من 1,200 طالب PT وابدأ نافس زمايلك واجمع XP دلوقتي</p>
+        <button class="pl-btn-primary" onclick="alert('شاشات التسجيل والدخول والمحاكي بالكامل متوفرة في صفحة الخطة!')">سجّل مجاناً دلوقتي</button>
+    </div>
+
+</div>
+
+<!-- Interactive JS logic -->
+<script>
+    // Mock Data Store for Leaderboard Tabs
+    const leaderboardData = {
+        weekly: [
+            { rank: 1, name: "أحمد محمود", batch: "PT 11 · Ortho King", xp: "2,450 XP", isGold: true },
+            { rank: 2, name: "سارة علي", batch: "PT 12 · Ortho King", xp: "1,980 XP", isSilver: true },
+            { rank: 3, name: "محمد حسن", batch: "PT 13 · Ortho King", xp: "1,720 XP", isBronze: true },
+            { rank: 4, name: "نور إبراهيم", batch: "PT 11 · Ortho King", xp: "1,540 XP" },
+            { rank: 5, name: "عمر مصطفى", batch: "PT 10 · Pain Specialist", xp: "1,310 XP" }
+        ],
+        alltime: [
+            { rank: 1, name: "أحمد محمود", batch: "PT 11 · Rehab Legend", xp: "12,650 XP", isGold: true },
+            { rank: 2, name: "محمد حسن", batch: "PT 13 · Rehab Legend", xp: "9,720 XP", isSilver: true },
+            { rank: 3, name: "نور إبراهيم", batch: "PT 11 · Rehab Legend", xp: "8,540 XP", isBronze: true },
+            { rank: 4, name: "سارة علي", batch: "PT 12 · Rehab Legend", xp: "7,980 XP" },
+            { rank: 5, name: "علي وجدي", batch: "PT 10 · Rehab Legend", xp: "6,210 XP" }
+        ],
+        batch: [
+            { rank: 1, name: "محمد حسن", batch: "PT 13 · Ortho King", xp: "1,720 XP", isGold: true },
+            { rank: 2, name: "شريف أحمد", batch: "PT 13 · Pain Specialist", xp: "1,150 XP", isSilver: true },
+            { rank: 3, name: "دينا وجدي", batch: "PT 13 · Pain Specialist", xp: "980 XP", isBronze: true },
+            { rank: 4, name: "كريم كمال", batch: "PT 13 · Pain Specialist", xp: "720 XP" }
+        ]
+    };
+
+    // Render list depending on tab choice
+    function switchTab(tabId) {
+        // Toggle active styles on buttons
+        document.getElementById('tab-weekly').classList.remove('active');
+        document.getElementById('tab-alltime').classList.remove('active');
+        document.getElementById('tab-batch').classList.remove('active');
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+
+        // Draw items
+        const listContainer = document.getElementById('leaderboard-list');
+        listContainer.innerHTML = '';
+
+        const data = leaderboardData[tabId];
+        data.forEach(row => {
+            let rankClass = '';
+            if (row.isGold) rankClass = 'gold';
+            else if (row.isSilver) rankClass = 'silver';
+            else if (row.isBronze) rankClass = 'bronze';
+
+            const initials = row.name.substring(0, 2);
+
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'pl-lb-row';
+            rowDiv.innerHTML = `
+                <div class="pl-lb-rank ${rankClass}">${row.rank}</div>
+                <div class="pl-lb-avatar">${initials}</div>
+                <div class="pl-lb-info">
+                    <div class="pl-lb-name">${row.name}</div>
+                    <div class="pl-lb-sub">${row.batch}</div>
+                </div>
+                <div class="pl-lb-xp">${row.xp}</div>
+            `;
+            listContainer.appendChild(rowDiv);
+        });
+    }
+
+    // Connect bottom nav highlights on click
+    const bottomNavItems = document.querySelectorAll('.pl-bottom-nav-item');
+    bottomNavItems.forEach(item => {
+        item.addEventListener('click', function() {
+            bottomNavItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    // Render weekly tab as default on load
+    window.addEventListener('DOMContentLoaded', () => {
+        switchTab('weekly');
+    });
+</script>
+
+</body>
+</html>
