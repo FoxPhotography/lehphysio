@@ -170,25 +170,29 @@ ensureAdminUser().then(() => {
 
 async function ensureAdminUser() {
   try {
-    const adminUser = await db.get('SELECT * FROM users WHERE username = ?', ['admin']);
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash('admin123', salt);
-    if (!adminUser) {
-      console.log('Seeding admin user...');
-      await db.run(
-        `INSERT INTO users (username, email, password_hash, batch, total_xp, is_verified, role, created_at) 
-         VALUES (?, ?, ?, ?, 0, 1, ?, ?)`,
-        ['admin', 'admin@physio.com', passwordHash, 'Admin Staff', 'admin', new Date().toISOString()]
-      );
-    } else {
-      console.log('Admin user already exists. Ensuring correct role and password...');
-      await db.run(
-        `UPDATE users SET password_hash = ?, role = ? WHERE username = ?`,
-        [passwordHash, 'admin', 'admin']
-      );
+    const admins = ['admin', 'admin1', 'admin2', 'admin3'];
+    
+    for (const adminName of admins) {
+      const adminUser = await db.get('SELECT * FROM users WHERE username = ?', [adminName]);
+      if (!adminUser) {
+        console.log(`Seeding ${adminName} user...`);
+        await db.run(
+          `INSERT INTO users (username, email, password_hash, batch, total_xp, is_verified, role, created_at) 
+           VALUES (?, ?, ?, ?, 0, 1, ?, ?)`,
+          [adminName, `${adminName}@physio.com`, passwordHash, 'Admin Staff', 'admin', new Date().toISOString()]
+        );
+      } else {
+        console.log(`${adminName} user already exists. Ensuring correct role and password...`);
+        await db.run(
+          `UPDATE users SET password_hash = ?, role = ? WHERE username = ?`,
+          [passwordHash, 'admin', adminName]
+        );
+      }
     }
   } catch (err) {
-    console.error('Error ensuring admin user:', err.message);
+    console.error('Error ensuring admin users:', err.message);
   }
 }
 
