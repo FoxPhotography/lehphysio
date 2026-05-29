@@ -24,10 +24,12 @@ import { CustomModal } from './components/CustomModal';
 import { Toast } from './components/Toast';
 import { XPPopup } from './components/XPPopup';
 
-// Use same host if deployed/tunneled, otherwise assume local dev server is pointing to port 5000
-const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.') 
-  ? `http://${window.location.hostname}:5000` 
-  : '';
+// Use environment variable VITE_API_BASE if defined, otherwise detect localhost / local networks
+const API_BASE = import.meta.env.VITE_API_BASE || (
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.') 
+    ? `http://${window.location.hostname}:5000` 
+    : ''
+);
 
 function App() {
   // Navigation State
