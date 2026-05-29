@@ -15,12 +15,12 @@ const adminMiddleware = [authMiddleware, async (req, res, next) => {
   try {
     const user = await db.get('SELECT role FROM users WHERE id = ?', [req.user.id]);
     if (!user || user.role !== 'admin') {
-      return res.status(403).json({ error: 'غير مسموح. هذه الصفحة مخصصة للمسؤولين فقط.' });
+      return res.status(403).json({ error: 'Unauthorized. This page is reserved for admins only.' });
     }
     next();
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء التحقق من الصلاحيات.' });
+    res.status(500).json({ error: 'An error occurred while checking permissions.' });
   }
 }];
 
@@ -32,11 +32,11 @@ app.use(express.json());
 
 // Dynamic Rank Calculator Helper
 function getRank(xp) {
-  if (xp >= 6000) return { name_ar: 'أسطورة الريهاب', name_en: 'Rehab Legend', emoji: '👑', tier: 5 };
-  if (xp >= 3000) return { name_ar: 'النيوروچي', name_en: 'Neurogenic', emoji: '🧠', tier: 4 };
-  if (xp >= 1500) return { name_ar: 'سيد الأورثو', name_en: 'Ortho King', emoji: '🦴', tier: 3 };
-  if (xp >= 500) return { name_ar: 'أخصائي الألم', name_en: 'Pain Specialist', emoji: '⚡', tier: 2 };
-  return { name_ar: 'طالب تشريح', name_en: 'Anatomy Rookie', emoji: '🧪', tier: 1 };
+  if (xp >= 6000) return { name_ar: 'Rehab Legend', name_en: 'Rehab Legend', emoji: '👑', tier: 5 };
+  if (xp >= 3000) return { name_ar: 'Neurogenic', name_en: 'Neurogenic', emoji: '🧠', tier: 4 };
+  if (xp >= 1500) return { name_ar: 'Ortho King', name_en: 'Ortho King', emoji: '🦴', tier: 3 };
+  if (xp >= 500) return { name_ar: 'Pain Specialist', name_en: 'Pain Specialist', emoji: '⚡', tier: 2 };
+  return { name_ar: 'Anatomy Rookie', name_en: 'Anatomy Rookie', emoji: '🧪', tier: 1 };
 }
 
 // Seeding function to populate dummy data if empty
@@ -49,9 +49,9 @@ async function seedDatabase() {
       const ep1 = await db.run(
         `INSERT INTO episodes (title_ar, title_en, description, thumbnail_url, youtube_url, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
         [
-          'الحلقة الأولى: مقدمة في العلاج الطبيعي وسر المهنة',
           'Episode 1: Intro to Physical Therapy & Career Secrets',
-          'في هذه الحلقة نتحدث مع الدكتور أحمد علي حول أساسيات العلاج الطبيعي والمفاهيم الخاطئة الشائعة.',
+          'Episode 1: Intro to Physical Therapy & Career Secrets',
+          'In this episode, we talk with Dr. Ahmed Ali about the basics of physical therapy and common misconceptions.',
           'https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=600&q=80',
           'https://www.youtube.com/watch?v=dQw4w9WgXcQ', // Placeholder
           new Date().toISOString()
@@ -61,9 +61,9 @@ async function seedDatabase() {
       const ep2 = await db.run(
         `INSERT INTO episodes (title_ar, title_en, description, thumbnail_url, youtube_url, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
         [
-          'الحلقة الثانية: تشريح الطرف السفلي والميكانيكا الحيوية',
           'Episode 2: Lower Limb Anatomy & Biomechanics',
-          'شرح تفصيلي لتشريح الركبة والكاحل وأهم الإصابات التي تواجه الرياضيين وطرق علاجها.',
+          'Episode 2: Lower Limb Anatomy & Biomechanics',
+          'A detailed explanation of knee and ankle anatomy, major sports injuries, and treatment methods.',
           'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=600&q=80',
           'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           new Date().toISOString()
@@ -73,9 +73,9 @@ async function seedDatabase() {
       const ep3 = await db.run(
         `INSERT INTO episodes (title_ar, title_en, description, thumbnail_url, youtube_url, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
         [
-          'الحلقة الثالثة: تأهيل إصابات الملاعب والرباط الصليبي',
           'Episode 3: Sports Injuries & ACL Rehabilitation',
-          'رحلة التعافي الكامل بعد عملية الرباط الصليبي من اليوم الأول وحتى العودة للملعب.',
+          'Episode 3: Sports Injuries & ACL Rehabilitation',
+          'The journey of full recovery after ACL surgery from day one until returning to the field.',
           'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80',
           'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
           new Date().toISOString()
@@ -87,9 +87,9 @@ async function seedDatabase() {
         `INSERT INTO quizzes (episode_id, question, options, correct_option_index, xp_reward) VALUES (?, ?, ?, ?, ?)`,
         [
           ep1.id,
-          'ما هو أول خط دفاع في الجسم لعلاج المشاكل الحركية؟',
-          JSON.stringify(['الأدوية المسكنة', 'الراحة التامة', 'التمارين العلاجية والتشخيص الصحيح', 'العمليات الجراحية']),
-          2, // 'التمارين العلاجية والتشخيص الصحيح'
+          "What is the body's first line of defense for treating movement problems?",
+          JSON.stringify(['Painkillers', 'Complete Rest', 'Therapeutic Exercises & Correct Diagnosis', 'Surgical Operations']),
+          2, // 'Therapeutic Exercises & Correct Diagnosis'
           150
         ]
       );
@@ -98,7 +98,7 @@ async function seedDatabase() {
         `INSERT INTO quizzes (episode_id, question, options, correct_option_index, xp_reward) VALUES (?, ?, ?, ?, ?)`,
         [
           ep2.id,
-          'ما هي أكبر عضلة في منطقة الفخذ الخلفية؟',
+          'What is the largest muscle in the posterior thigh region?',
           JSON.stringify(['Biceps Femoris', 'Semitendinosus', 'Semimembranosus', 'Rectus Femoris']),
           0, // 'Biceps Femoris'
           150
@@ -109,9 +109,9 @@ async function seedDatabase() {
         `INSERT INTO quizzes (episode_id, question, options, correct_option_index, xp_reward) VALUES (?, ?, ?, ?, ?)`,
         [
           ep3.id,
-          'كم يستغرق تأهيل الرباط الصليبي كحد أدنى للعودة للملاعب؟',
-          JSON.stringify(['من شهر لشهرين', 'من 3 لـ 4 أشهر', 'من 6 لـ 9 أشهر', 'أكثر من سنتين']),
-          2, // 'من 6 لـ 9 أشهر'
+          'How long does ACL rehabilitation take at minimum to return to the field?',
+          JSON.stringify(['1-2 months', '3-4 months', '6-9 months', 'More than 2 years']),
+          2, // '6-9 months'
           150
         ]
       );
@@ -140,14 +140,14 @@ async function seedDatabase() {
       await db.run(
         `INSERT INTO mini_games (name, subject, game_type, game_data, created_at) VALUES (?, ?, ?, ?, ?)`,
         [
-          'تسمية عضلات الكتف',
+          'Shoulder Muscles Labeling',
           'Anatomy',
           'trivia',
           JSON.stringify({
             questions: [
-              { q: 'ما هي العضلة المسؤولة عن رفع الذراع جانباً بزاوية 90 درجة؟', options: ['Deltoid', 'Supraspinatus', 'Infraspinatus', 'Subscapularis'], correct: 0 },
-              { q: 'أي من عضلات الـ Rotator Cuff تقوم بعمل Internal Rotation؟', options: ['Supraspinatus', 'Infraspinatus', 'Teres Minor', 'Subscapularis'], correct: 3 },
-              { q: 'ما هو العصب المغذي لعضلة الـ Deltoid؟', options: ['Axillary nerve', 'Radial nerve', 'Median nerve', 'Ulnar nerve'], correct: 0 }
+              { q: 'Which muscle is responsible for abducting the arm to 90 degrees?', options: ['Deltoid', 'Supraspinatus', 'Infraspinatus', 'Subscapularis'], correct: 0 },
+              { q: 'Which of the Rotator Cuff muscles performs Internal Rotation?', options: ['Supraspinatus', 'Infraspinatus', 'Teres Minor', 'Subscapularis'], correct: 3 },
+              { q: 'What is the nerve that supplies the Deltoid muscle?', options: ['Axillary nerve', 'Radial nerve', 'Median nerve', 'Ulnar nerve'], correct: 0 }
             ]
           }),
           new Date().toISOString()
@@ -162,9 +162,35 @@ async function seedDatabase() {
 }
 
 // Run Seeder
-seedDatabase().then(() => {
+ensureAdminUser().then(() => {
+  return seedDatabase();
+}).then(() => {
   seedChat();
 });
+
+async function ensureAdminUser() {
+  try {
+    const adminUser = await db.get('SELECT * FROM users WHERE username = ?', ['admin']);
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash('admin123', salt);
+    if (!adminUser) {
+      console.log('Seeding admin user...');
+      await db.run(
+        `INSERT INTO users (username, email, password_hash, batch, total_xp, is_verified, role, created_at) 
+         VALUES (?, ?, ?, ?, 0, 1, ?, ?)`,
+        ['admin', 'admin@physio.com', passwordHash, 'Admin Staff', 'admin', new Date().toISOString()]
+      );
+    } else {
+      console.log('Admin user already exists. Ensuring correct role and password...');
+      await db.run(
+        `UPDATE users SET password_hash = ?, role = ? WHERE username = ?`,
+        [passwordHash, 'admin', 'admin']
+      );
+    }
+  } catch (err) {
+    console.error('Error ensuring admin user:', err.message);
+  }
+}
 
 async function seedChat() {
   try {
@@ -197,13 +223,13 @@ async function seedChat() {
       }
 
       const msgs = [
-        { user: 'sara_anatomy', text: 'سلام عليكم يا جماعة، أنا لسة مسجلة في المنصة النهاردة بجد فكرة خرافية! 😍' },
-        { user: 'omar_ortho', text: 'وعليكم السلام يا سارة! منورة المنصة.. شفتي كود الحلقة الأولى السري؟' },
-        { user: 'sara_anatomy', text: 'لا لسة، هو فين بالظبط؟' },
-        { user: 'ahmed_physio', text: 'هتلاقيه في الدقيقة 12:45 وسط كلام الدكتور أحمد علي عن سر المهنة 😉' },
-        { user: 'nour_rehab', text: 'منورين يا شباب! كويز الحلقة التانية نزل وفيه أسئلة ميكانيكا حيوية عن الركبة.. مين حله وقفل الـ XP؟' },
-        { user: 'omar_ortho', text: 'أنا حليته يا دكتورة نور! بس السؤال التاني لفّفني شوية عن الـ Biceps Femoris 😂' },
-        { user: 'ahmed_physio', text: 'الـ Biceps Femoris دي بتعمل Flexion للركبة و Extension للفخذ.. ركز يا عمر التشريح أساس كل حاجة 🦴' }
+        { user: 'sara_anatomy', text: 'Hello everyone! I just registered on the platform today, it is really an amazing idea! 😍' },
+        { user: 'omar_ortho', text: 'Welcome Sara! Glad to have you here. Did you find the secret code in Episode 1?' },
+        { user: 'sara_anatomy', text: 'No not yet, where is it exactly?' },
+        { user: 'ahmed_physio', text: "You will find it at minute 12:45 during Dr. Ahmed Ali's talk about career secrets 😉" },
+        { user: 'nour_rehab', text: 'Hey guys! Episode 2 quiz is out with knee biomechanics questions. Who solved it and maxed the XP?' },
+        { user: 'omar_ortho', text: 'I solved it Dr. Nour! But the second question about Biceps Femoris got me a bit confused 😂' },
+        { user: 'ahmed_physio', text: 'Biceps Femoris does knee flexion and hip extension. Focus Omar, anatomy is the foundation of everything 🦴' }
       ];
 
       let baseTime = Date.now() - 3600000; // 1 hour ago
@@ -228,14 +254,14 @@ app.post('/api/auth/register', async (req, res) => {
   const { username, email, password, batch } = req.body;
 
   if (!username || !email || !password || !batch) {
-    return res.status(400).json({ error: 'الرجاء ملء جميع الحقول المطلوبة.' });
+    return res.status(400).json({ error: 'Please fill in all required fields.' });
   }
 
   try {
     // Check if user already exists
     const existingUser = await db.get('SELECT * FROM users WHERE username = ? OR email = ?', [username.trim(), email.trim()]);
     if (existingUser) {
-      return res.status(400).json({ error: 'اسم المستخدم أو البريد الإلكتروني مسجل بالفعل.' });
+      return res.status(400).json({ error: 'Username or email is already registered.' });
     }
 
     // Hash password
@@ -254,10 +280,10 @@ app.post('/api/auth/register', async (req, res) => {
     // Send email code
     await sendVerificationCode(email.trim(), verificationCode, username.trim());
 
-    res.status(201).json({ message: 'تم التسجيل بنجاح. يرجى التحقق من بريدك الإلكتروني للحصول على رمز التفعيل.' });
+    res.status(201).json({ message: 'Registration successful. Please check your email for the activation code.' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ في الخادم أثناء التسجيل.' });
+    res.status(500).json({ error: 'Server error during registration.' });
   }
 });
 
@@ -266,21 +292,21 @@ app.post('/api/auth/verify', async (req, res) => {
   const { email, code } = req.body;
 
   if (!email || !code) {
-    return res.status(400).json({ error: 'الرجاء إدخال البريد الإلكتروني وكود التفعيل.' });
+    return res.status(400).json({ error: 'Please enter email and activation code.' });
   }
 
   try {
     const user = await db.get('SELECT * FROM users WHERE email = ?', [email.trim()]);
     if (!user) {
-      return res.status(404).json({ error: 'هذا الحساب غير موجود.' });
+      return res.status(404).json({ error: 'This account does not exist.' });
     }
 
     if (user.is_verified === 1) {
-      return res.status(400).json({ error: 'تم تفعيل هذا الحساب بالفعل.' });
+      return res.status(400).json({ error: 'This account is already verified.' });
     }
 
     if (user.verification_code !== code.toString().trim()) {
-      return res.status(400).json({ error: 'رمز التفعيل غير صحيح.' });
+      return res.status(400).json({ error: 'Invalid activation code.' });
     }
 
     // Update status
@@ -290,7 +316,7 @@ app.post('/api/auth/verify', async (req, res) => {
     const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
 
     res.json({
-      message: 'تم تفعيل الحساب بنجاح!',
+      message: 'Account activated successfully!',
       token,
       user: {
         id: user.id,
@@ -306,7 +332,7 @@ app.post('/api/auth/verify', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء تفعيل الحساب.' });
+    res.status(500).json({ error: 'An error occurred during account activation.' });
   }
 });
 
@@ -315,22 +341,22 @@ app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.status(400).json({ error: 'الرجاء إدخال اسم المستخدم وكلمة المرور.' });
+    return res.status(400).json({ error: 'Please enter username and password.' });
   }
 
   try {
     const user = await db.get('SELECT * FROM users WHERE username = ? OR email = ?', [username.trim(), username.trim()]);
     if (!user) {
-      return res.status(400).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة.' });
+      return res.status(400).json({ error: 'Incorrect username or password.' });
     }
 
     if (user.is_verified === 0) {
-      return res.status(400).json({ error: 'يرجى تفعيل الحساب أولاً باستخدام الكود المرسل لبريدك الإلكتروني.' });
+      return res.status(400).json({ error: 'Please activate your account first using the code sent to your email.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.status(400).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة.' });
+      return res.status(400).json({ error: 'Incorrect username or password.' });
     }
 
     // --- Streak & Daily Login Logic ---
@@ -393,7 +419,7 @@ app.post('/api/auth/login', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء تسجيل الدخول.' });
+    res.status(500).json({ error: 'An error occurred during login.' });
   }
 });
 
@@ -402,7 +428,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
   try {
     const user = await db.get('SELECT id, username, email, batch, total_xp, weekly_xp, streak_count, last_login_date, role FROM users WHERE id = ?', [req.user.id]);
     if (!user) {
-      return res.status(404).json({ error: 'المستخدم غير موجود.' });
+      return res.status(404).json({ error: 'User not found.' });
     }
 
     res.json({
@@ -414,7 +440,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء جلب الملف الشخصي.' });
+    res.status(500).json({ error: 'An error occurred while fetching profile.' });
   }
 });
 
@@ -426,7 +452,7 @@ app.get('/api/episodes', async (req, res) => {
     const episodes = await db.all('SELECT * FROM episodes ORDER BY id DESC');
     res.json(episodes);
   } catch (err) {
-    res.status(500).json({ error: 'حدث خطأ أثناء جلب الحلقات.' });
+    res.status(500).json({ error: 'An error occurred while fetching episodes.' });
   }
 });
 
@@ -435,7 +461,7 @@ app.get('/api/episodes/:id', async (req, res) => {
   try {
     const episode = await db.get('SELECT * FROM episodes WHERE id = ?', [req.params.id]);
     if (!episode) {
-      return res.status(404).json({ error: 'الحلقة غير موجودة.' });
+      return res.status(404).json({ error: 'Episode not found.' });
     }
 
     // Get the associated quiz if any
@@ -531,7 +557,7 @@ app.get('/api/episodes/:id', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء جلب تفاصيل الحلقة.' });
+    res.status(500).json({ error: 'An error occurred while fetching episode details.' });
   }
 });
 
@@ -539,7 +565,7 @@ app.get('/api/episodes/:id', async (req, res) => {
 app.post('/api/episodes', async (req, res) => {
   const { title_ar, title_en, description, thumbnail_url, youtube_url } = req.body;
   if (!title_ar || !title_en) {
-    return res.status(400).json({ error: 'عنوان الحلقة مطلوب.' });
+    return res.status(400).json({ error: 'Episode title is required.' });
   }
 
   try {
@@ -547,9 +573,9 @@ app.post('/api/episodes', async (req, res) => {
       `INSERT INTO episodes (title_ar, title_en, description, thumbnail_url, youtube_url, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
       [title_ar, title_en, description, thumbnail_url, youtube_url, new Date().toISOString()]
     );
-    res.status(201).json({ id: result.id, message: 'تم إضافة الحلقة بنجاح.' });
+    res.status(201).json({ id: result.id, message: 'Episode added successfully.' });
   } catch (err) {
-    res.status(500).json({ error: 'حدث خطأ أثناء إضافة الحلقة.' });
+    res.status(500).json({ error: 'An error occurred while adding the episode.' });
   }
 });
 
@@ -559,7 +585,7 @@ app.post('/api/episodes', async (req, res) => {
 app.post('/api/xp-codes/redeem', authMiddleware, async (req, res) => {
   const { code } = req.body;
   if (!code) {
-    return res.status(400).json({ error: 'الرجاء إدخال الرمز السري.' });
+    return res.status(400).json({ error: 'Please enter the secret code.' });
   }
 
   const cleanCode = code.trim().toUpperCase();
@@ -568,26 +594,26 @@ app.post('/api/xp-codes/redeem', authMiddleware, async (req, res) => {
     // 1. Check code existence
     const xpCode = await db.get('SELECT * FROM xp_codes WHERE code = ?', [cleanCode]);
     if (!xpCode) {
-      return res.status(404).json({ error: 'الرمز السري غير صحيح أو غير موجود.' });
+      return res.status(404).json({ error: 'Secret code is incorrect or does not exist.' });
     }
 
     // 2. Check Expiry
     if (xpCode.expiry_date) {
       const expiry = new Date(xpCode.expiry_date);
       if (expiry < new Date()) {
-        return res.status(400).json({ error: 'عذرًا، انتهت صلاحية هذا الرمز.' });
+        return res.status(400).json({ error: 'Sorry, this code has expired.' });
       }
     }
 
     // 3. Check Max Uses
     if (xpCode.current_uses >= xpCode.max_uses) {
-      return res.status(400).json({ error: 'عذرًا، وصل هذا الرمز إلى الحد الأقصى للاستخدام.' });
+      return res.status(400).json({ error: 'Sorry, this code has reached its maximum uses.' });
     }
 
     // 4. Check if User already redeemed it
     const alreadyRedeemed = await db.get('SELECT * FROM code_redemptions WHERE user_id = ? AND code_id = ?', [req.user.id, xpCode.id]);
     if (alreadyRedeemed) {
-      return res.status(400).json({ error: 'لقد قمت باستخدام هذا الرمز مسبقاً.' });
+      return res.status(400).json({ error: 'You have already redeemed this code.' });
     }
 
     // 5. Redeem: Insert redemption log
@@ -605,7 +631,7 @@ app.post('/api/xp-codes/redeem', authMiddleware, async (req, res) => {
 
     res.json({
       success: true,
-      message: `تم تفعيل الرمز بنجاح! حصلت على +${xpCode.xp_reward} XP`,
+      message: `Code activated successfully! You earned +${xpCode.xp_reward} XP`,
       xp_earned: xpCode.xp_reward,
       total_xp: newTotalXp,
       weekly_xp: newWeeklyXp,
@@ -613,7 +639,7 @@ app.post('/api/xp-codes/redeem', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء معالجة الرمز السري.' });
+    res.status(500).json({ error: 'An error occurred while processing the code.' });
   }
 });
 
@@ -621,7 +647,7 @@ app.post('/api/xp-codes/redeem', authMiddleware, async (req, res) => {
 app.post('/api/xp-codes', adminMiddleware, async (req, res) => {
   const { code, xp_reward, type, episode_id, max_uses, expiry_date } = req.body;
   if (!code || !xp_reward || !type) {
-    return res.status(400).json({ error: 'الرمز وقيمة النقاط والنوع حقول مطلوبة.' });
+    return res.status(400).json({ error: 'Code, XP reward, and type are required fields.' });
   }
 
   try {
@@ -629,9 +655,9 @@ app.post('/api/xp-codes', adminMiddleware, async (req, res) => {
       `INSERT INTO xp_codes (code, xp_reward, type, episode_id, max_uses, expiry_date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [code.trim().toUpperCase(), xp_reward, type, episode_id || null, max_uses || 9999, expiry_date || null, new Date().toISOString()]
     );
-    res.status(201).json({ id: result.id, message: 'تم إنشاء الرمز بنجاح.' });
+    res.status(201).json({ id: result.id, message: 'Code created successfully.' });
   } catch (err) {
-    res.status(500).json({ error: 'حدث خطأ أثناء إنشاء الرمز (ربما الرمز مكرر).' });
+    res.status(500).json({ error: 'An error occurred while creating the code (it might be a duplicate).' });
   }
 });
 
@@ -690,7 +716,7 @@ app.get('/api/leaderboard', async (req, res) => {
     res.json(finalLeaderboard);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء جلب لوحة الصدارة.' });
+    res.status(500).json({ error: 'An error occurred while fetching the leaderboard.' });
   }
 });
 // --- CHAT ROUTES ---
@@ -800,7 +826,7 @@ app.get('/api/chat', async (req, res) => {
     res.json(formatted);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء جلب الرسائل.' });
+    res.status(500).json({ error: 'An error occurred while fetching messages.' });
   }
 });
 
@@ -808,7 +834,7 @@ app.get('/api/chat', async (req, res) => {
 app.post('/api/chat', authMiddleware, async (req, res) => {
   const { message, reply_to_id } = req.body;
   if (!message || message.trim() === '') {
-    return res.status(400).json({ error: 'لا يمكن إرسال رسالة فارغة.' });
+    return res.status(400).json({ error: 'Cannot send an empty message.' });
   }
 
   try {
@@ -853,7 +879,7 @@ app.post('/api/chat/:messageId/react', authMiddleware, async (req, res) => {
   const { emoji } = req.body;
 
   if (!emoji) {
-    return res.status(400).json({ error: 'الرمز التعبيري مطلوب.' });
+    return res.status(400).json({ error: 'Emoji is required.' });
   }
 
   try {
@@ -883,7 +909,7 @@ app.post('/api/chat/:messageId/react', authMiddleware, async (req, res) => {
     }
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء حفظ التفاعل.' });
+    res.status(500).json({ error: 'An error occurred while saving the reaction.' });
   }
 });
 
@@ -893,17 +919,17 @@ app.put('/api/chat/:messageId', authMiddleware, async (req, res) => {
   const { message } = req.body;
 
   if (!message || message.trim() === '') {
-    return res.status(400).json({ error: 'الرسالة لا يمكن أن تكون فارغة.' });
+    return res.status(400).json({ error: 'Message cannot be empty.' });
   }
 
   try {
     const existing = await db.get('SELECT * FROM chat_messages WHERE id = ?', [messageId]);
     if (!existing) {
-      return res.status(404).json({ error: 'الرسالة غير موجودة.' });
+      return res.status(404).json({ error: 'Message not found.' });
     }
 
     if (existing.user_id !== req.user.id) {
-      return res.status(403).json({ error: 'غير مصرح لك بتعديل هذه الرسالة.' });
+      return res.status(403).json({ error: 'You are not authorized to edit this message.' });
     }
 
     await db.run(
@@ -911,10 +937,10 @@ app.put('/api/chat/:messageId', authMiddleware, async (req, res) => {
       [message.trim(), messageId]
     );
 
-    res.json({ success: true, message: 'تم تعديل الرسالة بنجاح.' });
+    res.json({ success: true, message: 'Message edited successfully.' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء تعديل الرسالة.' });
+    res.status(500).json({ error: 'An error occurred while editing the message.' });
   }
 });
 
@@ -926,21 +952,21 @@ app.delete('/api/chat/:messageId', authMiddleware, async (req, res) => {
   try {
     const existing = await db.get('SELECT * FROM chat_messages WHERE id = ?', [messageId]);
     if (!existing) {
-      return res.status(404).json({ error: 'الرسالة غير موجودة.' });
+      return res.status(404).json({ error: 'Message not found.' });
     }
 
     const requester = await db.get('SELECT role FROM users WHERE id = ?', [req.user.id]);
     const isAdmin = requester && requester.role === 'admin';
 
     if (existing.user_id !== req.user.id && !isAdmin) {
-      return res.status(403).json({ error: 'غير مصرح لك بحذف هذه الرسالة.' });
+      return res.status(403).json({ error: 'You are not authorized to delete this message.' });
     }
 
     await db.run('DELETE FROM chat_messages WHERE id = ?', [messageId]);
-    res.json({ success: true, message: 'تم حذف الرسالة بنجاح.' });
+    res.json({ success: true, message: 'Message deleted successfully.' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء حذف الرسالة.' });
+    res.status(500).json({ error: 'An error occurred while deleting the message.' });
   }
 });
 
@@ -951,23 +977,23 @@ app.delete('/api/comments/:commentId', authMiddleware, async (req, res) => {
   try {
     const existing = await db.get('SELECT * FROM interactions WHERE id = ? AND (type = "comment" OR type = "reply" OR type = "comment_like")', [commentId]);
     if (!existing) {
-      return res.status(404).json({ error: 'التعليق غير موجود.' });
+      return res.status(404).json({ error: 'Comment not found.' });
     }
 
     const requester = await db.get('SELECT role FROM users WHERE id = ?', [req.user.id]);
     const isAdmin = requester && requester.role === 'admin';
 
     if (existing.user_id !== req.user.id && !isAdmin) {
-      return res.status(403).json({ error: 'غير مصرح لك بحذف هذا التعليق.' });
+      return res.status(403).json({ error: 'You are not authorized to delete this comment.' });
     }
 
     // Delete comment, replies and likes linked to it
     await db.run('DELETE FROM interactions WHERE id = ? OR parent_id = ? OR parent_id IN (SELECT id FROM interactions WHERE parent_id = ?)', [commentId, commentId, commentId]);
 
-    res.json({ success: true, message: 'تم حذف التعليق بنجاح.' });
+    res.json({ success: true, message: 'Comment deleted successfully.' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء حذف التعليق.' });
+    res.status(500).json({ error: 'An error occurred while deleting the comment.' });
   }
 });
 
@@ -978,23 +1004,23 @@ app.delete('/api/suggestions/:id', authMiddleware, async (req, res) => {
   try {
     const existing = await db.get('SELECT * FROM suggestions WHERE id = ?', [suggestionId]);
     if (!existing) {
-      return res.status(404).json({ error: 'الاقتراح غير موجود.' });
+      return res.status(404).json({ error: 'Suggestion not found.' });
     }
 
     const requester = await db.get('SELECT role FROM users WHERE id = ?', [req.user.id]);
     const isAdmin = requester && requester.role === 'admin';
 
     if (existing.user_id !== req.user.id && !isAdmin) {
-      return res.status(403).json({ error: 'غير مصرح لك بحذف هذا الاقتراح.' });
+      return res.status(403).json({ error: 'You are not authorized to delete this suggestion.' });
     }
 
     await db.run('DELETE FROM suggestions WHERE id = ?', [suggestionId]);
     await db.run('DELETE FROM suggestion_upvotes WHERE suggestion_id = ?', [suggestionId]);
 
-    res.json({ success: true, message: 'تم حذف الاقتراح بنجاح.' });
+    res.json({ success: true, message: 'Suggestion deleted successfully.' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء حذف الاقتراح.' });
+    res.status(500).json({ error: 'An error occurred while deleting the suggestion.' });
   }
 });
 
@@ -1003,7 +1029,7 @@ app.post('/api/chat/delete-bulk', authMiddleware, async (req, res) => {
   const { messageIds } = req.body;
 
   if (!Array.isArray(messageIds) || messageIds.length === 0) {
-    return res.status(400).json({ error: 'لم يتم تحديد رسائل للحذف.' });
+    return res.status(400).json({ error: 'No messages selected for deletion.' });
   }
 
   try {
@@ -1015,12 +1041,12 @@ app.post('/api/chat/delete-bulk', authMiddleware, async (req, res) => {
     
     res.json({ 
       success: true, 
-      message: 'تم حذف الرسائل المحددة بنجاح.',
+      message: 'Selected messages deleted successfully.',
       changes: result.changes 
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء الحذف الجماعي للرسائل.' });
+    res.status(500).json({ error: 'An error occurred during bulk deleting messages.' });
   }
 });
 
@@ -1040,7 +1066,7 @@ app.get('/api/games', async (req, res) => {
     res.json(formatted);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء جلب الألعاب.' });
+    res.status(500).json({ error: 'An error occurred while fetching games.' });
   }
 });
 
@@ -1052,7 +1078,7 @@ app.post('/api/games/:id/play', authMiddleware, async (req, res) => {
   try {
     const game = await db.get('SELECT * FROM mini_games WHERE id = ?', [gameId]);
     if (!game) {
-      return res.status(404).json({ error: 'اللعبة غير موجودة.' });
+      return res.status(404).json({ error: 'Game not found.' });
     }
 
     const playCount = await db.get(
@@ -1062,7 +1088,7 @@ app.post('/api/games/:id/play', authMiddleware, async (req, res) => {
     );
 
     if (playCount.count >= 3) {
-      return res.status(400).json({ error: 'لقد وصلت للحد الأقصى للعب اليوم (3 مرات). يمكنك اللعب غداً لكسب الـ XP!' });
+      return res.status(400).json({ error: 'You have reached the daily limit (3 plays). You can play again tomorrow to earn XP!' });
     }
 
     const xpReward = 50;
@@ -1080,7 +1106,7 @@ app.post('/api/games/:id/play', authMiddleware, async (req, res) => {
 
     res.json({
       success: true,
-      message: `رائع! أنهيت اللعبة بنجاح وحصلت على +${xpReward} XP!`,
+      message: `Awesome! You completed the game and earned +${xpReward} XP!`,
       xp_earned: xpReward,
       total_xp: newTotalXp,
       weekly_xp: newWeeklyXp,
@@ -1089,7 +1115,7 @@ app.post('/api/games/:id/play', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء تسجيل نقاط اللعبة.' });
+    res.status(500).json({ error: 'An error occurred while saving game score.' });
   }
 });
 
@@ -1101,20 +1127,20 @@ app.post('/api/episodes/:id/interact', authMiddleware, async (req, res) => {
   const { type, content, parent_id } = req.body; // type: 'like' | 'comment' | 'share' | 'comment_like'
 
   if (!type || !['like', 'comment', 'share', 'comment_like'].includes(type)) {
-    return res.status(400).json({ error: 'النوع يجب أن يكون like أو comment أو share أو comment_like.' });
+    return res.status(400).json({ error: 'Type must be like, comment, share, or comment_like.' });
   }
   if (type === 'comment' && (!content || content.trim() === '')) {
-    return res.status(400).json({ error: 'محتوى التعليق مطلوب.' });
+    return res.status(400).json({ error: 'Comment content is required.' });
   }
   if (type === 'comment_like' && !parent_id) {
-    return res.status(400).json({ error: 'معرّف التعليق (parent_id) مطلوب للإعجاب.' });
+    return res.status(400).json({ error: 'Comment ID (parent_id) is required for liking.' });
   }
 
   const XP_MAP = { like: 5, comment: 15, share: 25, comment_like: 0 };
 
   try {
     const episode = await db.get('SELECT id FROM episodes WHERE id = ?', [episodeId]);
-    if (!episode) return res.status(404).json({ error: 'الحلقة غير موجودة.' });
+    if (!episode) return res.status(404).json({ error: 'Episode not found.' });
 
     // Handle Comment Like (toggle behavior)
     if (type === 'comment_like') {
@@ -1146,7 +1172,7 @@ app.post('/api/episodes/:id/interact', authMiddleware, async (req, res) => {
           await db.run('DELETE FROM interactions WHERE id = ?', [existing.id]);
           return res.json({ success: true, action: 'removed', type });
         }
-        return res.status(400).json({ error: 'لقد قمت بهذا الإجراء مسبقاً.' });
+        return res.status(400).json({ error: 'You have already performed this action.' });
       }
     }
 
@@ -1157,7 +1183,7 @@ app.post('/api/episodes/:id/interact', authMiddleware, async (req, res) => {
         [req.user.id, episodeId, 'comment']
       );
       if (existingComment) {
-        return res.status(400).json({ error: 'لقد علقت على هذه الحلقة مسبقاً.' });
+        return res.status(400).json({ error: 'You have already commented on this episode.' });
       }
     }
 
@@ -1192,7 +1218,7 @@ app.post('/api/episodes/:id/interact', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء تسجيل التفاعل.' });
+    res.status(500).json({ error: 'An error occurred while saving interaction.' });
   }
 });
 
@@ -1202,13 +1228,13 @@ app.post('/api/episodes/:id/referral', async (req, res) => {
   const { referrer } = req.body;
 
   if (!referrer) {
-    return res.status(400).json({ error: 'اسم المحيل (referrer) مطلوب.' });
+    return res.status(400).json({ error: 'Referrer username is required.' });
   }
 
   try {
     const referrerUser = await db.get('SELECT id, total_xp, weekly_xp FROM users WHERE username = ?', [referrer]);
     if (!referrerUser) {
-      return res.status(404).json({ error: 'المحيل غير موجود.' });
+      return res.status(404).json({ error: 'Referrer not found.' });
     }
 
     // Optional auth check to prevent self-referral
@@ -1223,7 +1249,7 @@ app.post('/api/episodes/:id/referral', async (req, res) => {
     }
 
     if (visitorUserId && visitorUserId === referrerUser.id) {
-      return res.status(200).json({ success: false, message: 'لا يمكن إحالة نفسك.' });
+      return res.status(200).json({ success: false, message: 'You cannot refer yourself.' });
     }
 
     // Check if the referrer has already shared this episode
@@ -1233,7 +1259,7 @@ app.post('/api/episodes/:id/referral', async (req, res) => {
     );
 
     if (existing) {
-      return res.status(200).json({ success: false, message: 'تم احتساب نقاط المشاركة للمحيل مسبقاً.' });
+      return res.status(200).json({ success: false, message: 'Referral points already awarded.' });
     }
 
     // Insert interaction
@@ -1250,13 +1276,13 @@ app.post('/api/episodes/:id/referral', async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'تم منح نقاط المشاركة للمحيل بنجاح.',
+      message: 'Referral points awarded successfully.',
       referrer: referrer,
       xp_awarded: xpGain
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'حدث خطأ في معالجة الإحالة.' });
+    return res.status(500).json({ error: 'An error occurred while processing referral.' });
   }
 });
 
@@ -1268,19 +1294,19 @@ app.post('/api/episodes/:id/quiz/submit', authMiddleware, async (req, res) => {
   const { quiz_id, answer_index } = req.body;
 
   if (quiz_id === undefined || answer_index === undefined) {
-    return res.status(400).json({ error: 'معرّف الكويز والإجابة مطلوبان.' });
+    return res.status(400).json({ error: 'Quiz ID and answer are required.' });
   }
 
   try {
     // Check quiz exists and belongs to episode
     const quiz = await db.get('SELECT * FROM quizzes WHERE id = ? AND episode_id = ?', [quiz_id, episodeId]);
-    if (!quiz) return res.status(404).json({ error: 'الكويز غير موجود.' });
+    if (!quiz) return res.status(404).json({ error: 'Quiz not found.' });
 
     // Check if already submitted
     const already = await db.get('SELECT * FROM quiz_submissions WHERE user_id = ? AND quiz_id = ?', [req.user.id, quiz_id]);
     if (already) {
       return res.status(400).json({
-        error: 'لقد أجبت على هذا الكويز مسبقاً.',
+        error: 'You have already answered this quiz.',
         is_correct: already.is_correct === 1,
         correct_option_index: quiz.correct_option_index
       });
@@ -1316,11 +1342,11 @@ app.post('/api/episodes/:id/quiz/submit', authMiddleware, async (req, res) => {
       xp_earned: xpEarned,
       total_xp: newTotalXp,
       rank: getRank(newTotalXp),
-      message: isCorrect ? `إجابة صحيحة! حصلت على +${xpEarned} XP 🎉` : 'إجابة خاطئة. حاول مجدداً في الحلقة القادمة!'
+      message: isCorrect ? `Correct answer! You earned +${xpEarned} XP 🎉` : 'Incorrect answer. Try again in the next episode!'
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء تسجيل الإجابة.' });
+    res.status(500).json({ error: 'An error occurred while saving your answer.' });
   }
 });
 
@@ -1365,7 +1391,7 @@ app.get('/api/suggestions', async (req, res) => {
     res.json(formatted);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء جلب الاقتراحات.' });
+    res.status(500).json({ error: 'An error occurred while fetching suggestions.' });
   }
 });
 
@@ -1373,7 +1399,7 @@ app.get('/api/suggestions', async (req, res) => {
 app.post('/api/suggestions', authMiddleware, async (req, res) => {
   const { title, content } = req.body;
   if (!title || !content) {
-    return res.status(400).json({ error: 'العنوان والمحتوى مطلوبان.' });
+    return res.status(400).json({ error: 'Title and content are required.' });
   }
 
   try {
@@ -1381,10 +1407,10 @@ app.post('/api/suggestions', authMiddleware, async (req, res) => {
       'INSERT INTO suggestions (user_id, title, content, created_at) VALUES (?, ?, ?, ?)',
       [req.user.id, title.trim(), content.trim(), new Date().toISOString()]
     );
-    res.status(201).json({ id: result.id, message: 'تم إرسال اقتراحك بنجاح! شكراً لمشاركتك.' });
+    res.status(201).json({ id: result.id, message: 'Your suggestion was submitted successfully! Thank you for sharing.' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء إرسال الاقتراح.' });
+    res.status(500).json({ error: 'An error occurred while submitting suggestion.' });
   }
 });
 
@@ -1394,7 +1420,7 @@ app.post('/api/suggestions/:id/upvote', authMiddleware, async (req, res) => {
 
   try {
     const suggestion = await db.get('SELECT * FROM suggestions WHERE id = ?', [suggestionId]);
-    if (!suggestion) return res.status(404).json({ error: 'الاقتراح غير موجود.' });
+    if (!suggestion) return res.status(404).json({ error: 'Suggestion not found.' });
 
     const existing = await db.get(
       'SELECT id FROM suggestion_upvotes WHERE user_id = ? AND suggestion_id = ?',
@@ -1417,7 +1443,7 @@ app.post('/api/suggestions/:id/upvote', authMiddleware, async (req, res) => {
     }
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء التصويت.' });
+    res.status(500).json({ error: 'An error occurred while voting.' });
   }
 });
 
@@ -1426,7 +1452,7 @@ app.post('/api/suggestions/:id/upvote', authMiddleware, async (req, res) => {
 // Admin: Create Episode + optional quiz + optional XP code
 app.post('/api/admin/episode', adminMiddleware, async (req, res) => {
   const { title_ar, title_en, description, thumbnail_url, youtube_url, quiz, xp_code } = req.body;
-  if (!title_ar) return res.status(400).json({ error: 'عنوان الحلقة بالعربية مطلوب.' });
+  if (!title_ar) return res.status(400).json({ error: 'Episode title in English is required.' });
 
   try {
     const epResult = await db.run(
@@ -1458,10 +1484,10 @@ app.post('/api/admin/episode', adminMiddleware, async (req, res) => {
       );
     }
 
-    res.status(201).json({ success: true, episode_id: episodeId, message: 'تم إنشاء الحلقة بنجاح.' });
+    res.status(201).json({ success: true, episode_id: episodeId, message: 'Episode created successfully.' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء إنشاء الحلقة.' });
+    res.status(500).json({ error: 'An error occurred while creating the episode.' });
   }
 });
 
@@ -1471,7 +1497,7 @@ app.get('/api/admin/xp-codes', adminMiddleware, async (req, res) => {
     const codes = await db.all('SELECT * FROM xp_codes ORDER BY id DESC');
     res.json(codes);
   } catch (err) {
-    res.status(500).json({ error: 'حدث خطأ.' });
+    res.status(500).json({ error: 'An error occurred.' });
   }
 });
 
@@ -1483,7 +1509,7 @@ app.get('/api/admin/users', adminMiddleware, async (req, res) => {
     );
     res.json(users);
   } catch (err) {
-    res.status(500).json({ error: 'حدث خطأ.' });
+    res.status(500).json({ error: 'An error occurred.' });
   }
 });
 
@@ -1493,25 +1519,25 @@ app.patch('/api/admin/users/:id/role', adminMiddleware, async (req, res) => {
   const { role } = req.body;
 
   if (!role || !['user', 'admin'].includes(role)) {
-    return res.status(400).json({ error: 'الصلاحية المحددة غير صالحة.' });
+    return res.status(400).json({ error: 'The specified role is invalid.' });
   }
 
   try {
     // Prevent admin from demoting themselves
     if (parseInt(userId) === req.user.id) {
-      return res.status(400).json({ error: 'لا يمكنك تغيير صلاحية حسابك بنفسك.' });
+      return res.status(400).json({ error: 'You cannot change your own role.' });
     }
 
     const targetUser = await db.get('SELECT username FROM users WHERE id = ?', [userId]);
     if (!targetUser) {
-      return res.status(404).json({ error: 'المستخدم غير موجود.' });
+      return res.status(404).json({ error: 'User not found.' });
     }
 
     await db.run('UPDATE users SET role = ? WHERE id = ?', [role, userId]);
-    res.json({ success: true, message: `تم تحديث صلاحية ${targetUser.username} إلى ${role === 'admin' ? 'مشرف' : 'طالب'}.` });
+    res.json({ success: true, message: `Updated ${targetUser.username}'s role to ${role === 'admin' ? 'Admin' : 'Student'}.` });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء تحديث صلاحية المستخدم.' });
+    res.status(500).json({ error: 'An error occurred while updating user role.' });
   }
 });
 
@@ -1523,7 +1549,7 @@ app.get('/api/admin/suggestions', adminMiddleware, async (req, res) => {
     );
     res.json(suggestions);
   } catch (err) {
-    res.status(500).json({ error: 'حدث خطأ.' });
+    res.status(500).json({ error: 'An error occurred.' });
   }
 });
 
@@ -1531,13 +1557,13 @@ app.get('/api/admin/suggestions', adminMiddleware, async (req, res) => {
 app.patch('/api/admin/suggestions/:id', adminMiddleware, async (req, res) => {
   const { status } = req.body;
   if (!['pending', 'approved', 'rejected'].includes(status)) {
-    return res.status(400).json({ error: 'الحالة غير صالحة.' });
+    return res.status(400).json({ error: 'Invalid status.' });
   }
   try {
     await db.run('UPDATE suggestions SET status = ? WHERE id = ?', [status, req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'حدث خطأ.' });
+    res.status(500).json({ error: 'An error occurred.' });
   }
 });
 
@@ -1545,16 +1571,16 @@ app.patch('/api/admin/suggestions/:id', adminMiddleware, async (req, res) => {
 app.post('/api/admin/games', adminMiddleware, async (req, res) => {
   const { name, subject, game_type, game_data } = req.body;
   if (!name || !subject || !game_type || !game_data) {
-    return res.status(400).json({ error: 'جميع الحقول مطلوبة.' });
+    return res.status(400).json({ error: 'All fields are required.' });
   }
   try {
     const result = await db.run(
       'INSERT INTO mini_games (name, subject, game_type, game_data, created_at) VALUES (?, ?, ?, ?, ?)',
       [name, subject, game_type, JSON.stringify(game_data), new Date().toISOString()]
     );
-    res.status(201).json({ id: result.id, message: 'تم إنشاء اللعبة بنجاح.' });
+    res.status(201).json({ id: result.id, message: 'Game created successfully.' });
   } catch (err) {
-    res.status(500).json({ error: 'حدث خطأ.' });
+    res.status(500).json({ error: 'An error occurred.' });
   }
 });
 
@@ -1570,166 +1596,166 @@ const ANATOMY_QUESTIONS = [
     structure: 'Biceps Brachii',
     type: 'muscle',
     hints: [
-      'عضلة تقع في الطرف العلوي من الجسم (منطقة العضد).',
-      'لها رأسان أساسيان (رأس طويل ورأس قصير).',
-      'الحركة الأساسية لها هي ثني الكوع (Flexion) واستلقاء الساعد (Supination).',
-      'يغذيها العصب العضلي الجلدي (Musculocutaneous nerve).'
+      'A muscle located in the upper limb (arm region).',
+      'It has two main heads (long head and short head).',
+      'Its primary action is elbow flexion and forearm supination.',
+      'Supplied by the musculocutaneous nerve.'
     ],
-    answers: ['biceps brachii', 'biceps', 'البايسبس', 'العضلة ذات الرأسين العضدية', 'ذات الرأسين العضدية', 'العضلة ذات الرأسين']
+    answers: ['biceps brachii', 'biceps', 'biceps muscle', 'bicep']
   },
   {
     structure: 'Femur',
     type: 'bone',
     hints: [
-      'عظمة تقع في الطرف السفلي من الجسم.',
-      'تعتبر أطول وأقوى عظمة في جسم الإنسان بالكامل.',
-      'تتمفصل من الأعلى مع عظم الحوض ومن الأسفل مع الرضفة والظنبوب.',
-      'تحتوي نهايتها العلوية على المدور الكبير (Greater trochanter) وعنق عظمة الفخذ.'
+      'A bone located in the lower limb.',
+      'It is considered the longest and strongest bone in the entire human body.',
+      'Articulates superiorly with the pelvis and inferiorly with the patella and tibia.',
+      'Its upper end contains the greater trochanter and the femoral neck.'
     ],
-    answers: ['femur', 'الفخذ', 'عظم الفخذ', 'عظمة الفخذ']
+    answers: ['femur', 'thigh bone', 'femur bone']
   },
   {
     structure: 'Radial Nerve',
     type: 'nerve',
     hints: [
-      'عصب رئيسي وهام يغذي عضلات الطرف العلوي.',
-      'يسير في الأخدود الحلزوني (Spiral groove) لعظمة العضد.',
-      'يغذي العضلات الباسطة (Extensors) للساعد والمعصم والأصابع.',
-      'إصابته الشائعة تؤدي إلى حالة تدلي أو سقوط الرسغ (Wrist drop).'
+      'A major nerve supplying the muscles of the upper limb.',
+      'Runs in the spiral groove of the humerus bone.',
+      'Supplies the extensor muscles of the forearm, wrist, and fingers.',
+      'Its common injury leads to a wrist drop condition.'
     ],
-    answers: ['radial nerve', 'radial', 'العصب الكعبري', 'الكعبري', 'عصب كعبري']
+    answers: ['radial nerve', 'radial']
   },
   {
     structure: 'Deltoid',
     type: 'muscle',
     hints: [
-      'عضلة تقع في منطقة الكتف.',
-      'تعطي الكتف شكله المستدير المميز وتنقسم إلى ثلاثة ألياف (أمامية، وسطى، خلفية).',
-      'الألياف الوسطى هي المسؤولة عن تبعيد الذراع (Abduction) جانباً من 15 إلى 90 درجة.',
-      'يغذيها العصب الإبطي (Axillary nerve).'
+      'A muscle located in the shoulder region.',
+      'Gives the shoulder its characteristic rounded shape and is divided into three fibers (anterior, middle, posterior).',
+      'Middle fibers are responsible for arm abduction from 15 to 90 degrees.',
+      'Supplied by the axillary nerve.'
     ],
-    answers: ['deltoid', 'الدالية', 'العضلة الدالية', 'الكتف', 'عضلة الكتف']
+    answers: ['deltoid', 'delts', 'deltoid muscle']
   },
   {
     structure: 'Sciatic Nerve',
     type: 'nerve',
     hints: [
-      'عصب رئيسي وضخم جداً في الطرف السفلي.',
-      'هو أطول وأعرض عصب منفرد في جسم الإنسان بالكامل.',
-      'يخرج من الضفيرة العجزية ويمر خلف مفصل الفخذ وتحت العضلة الكمثرية (Piriformis).',
-      'التهابه أو الضغط عليه يسبب ألماً يمتد على طول الساق ويسمى شعبياً (عرق النسا).'
+      'A very large and main nerve in the lower limb.',
+      'It is the longest and widest single nerve in the entire human body.',
+      'Originates from the sacral plexus, passes behind the hip joint, and under the piriformis muscle.',
+      'Its inflammation or compression causes pain radiating along the leg, commonly known as sciatica.'
     ],
-    answers: ['sciatic nerve', 'sciatic', 'العصب الوركي', 'الوركي', 'عرق النسا', 'السيياتيك']
+    answers: ['sciatic nerve', 'sciatic', 'sciatica']
   },
   {
     structure: 'Gastrocnemius',
     type: 'muscle',
     hints: [
-      'عضلة سطحية تقع في الطرف السفلي (منطقة الساق الخلفية).',
-      'تسمى شعبياً عضلة السمانة أو التوأمية لأن لها رأسان (إنسي ووحشي).',
-      'تقوم بعمل ثني أخمصي للقدم (Plantar flexion) وتساعد في ثني الركبة.',
-      'تتحد مع العضلة النعلية (Soleus) لتشكل وتر أكيليس (Achilles tendon).'
+      'A superficial muscle located in the lower limb (posterior calf region).',
+      'Commonly called the calf or double muscle because it has two heads (medial and lateral).',
+      'Performs plantar flexion of the foot and assists in knee flexion.',
+      'Combines with the soleus muscle to form the Achilles tendon.'
     ],
-    answers: ['gastrocnemius', 'gastroc', 'السمانة', 'العضلة التوأمية', 'العضلة بطنية الساق', 'بطنية الساق', 'توأمية الساق']
+    answers: ['gastrocnemius', 'gastroc', 'calf muscle', 'calf']
   },
   {
     structure: 'Clavicle',
     type: 'bone',
     hints: [
-      'عظمة تقع في الجزء العلوي الأمامي من الصدر.',
-      'تأخذ شكل حرف S وهي العظمة الوحيدة الأفقية الطويلة في الجسم.',
-      'تربط الطرف العلوي بالهيكل العظمي المحوري وتتمفصل مع عظمة القص ولوح الكتف.',
-      'تسمى شعبياً بعظمة الترقوة وتعتبر من أكثر العظام عرضة للكسر.'
+      'A bone located in the upper anterior part of the chest.',
+      'It is S-shaped and is the only long horizontal bone in the body.',
+      'Connects the upper limb to the axial skeleton, articulating with the sternum and scapula.',
+      'Commonly called the collarbone and is one of the most frequently fractured bones.'
     ],
-    answers: ['clavicle', 'الترقوة', 'عظمة الترقوة', 'عظم الترقوة']
+    answers: ['clavicle', 'collarbone']
   },
   {
     structure: 'Median Nerve',
     type: 'nerve',
     hints: [
-      'عصب هام يسير في منتصف الطرف العلوي.',
-      'يمر عبر نفق الرسغ (Carpal tunnel) تحت رباط المعصم.',
-      'يغذي معظم عضلات الساعد المثنية (Flexors) وعضلات ركبة الإبهام (Thenar muscles).',
-      'انضغاطه في المعصم يسبب متلازمة نفق الرسغ (Carpal Tunnel Syndrome) وتنميل الأصابع الثلاثة الأولى.'
+      'An important nerve running down the middle of the upper limb.',
+      'Passes through the carpal tunnel under the wrist flexor retinaculum.',
+      'Supplies most of the forearm flexor muscles and the thenar muscles of the thumb.',
+      'Compression in the wrist causes Carpal Tunnel Syndrome and numbness in the first three fingers.'
     ],
-    answers: ['median nerve', 'median', 'العصب المتوسط', 'المتوسط', 'عصب متوسط']
+    answers: ['median nerve', 'median']
   },
   {
     structure: 'Triceps Brachii',
     type: 'muscle',
     hints: [
-      'عضلة تقع في الجزء الخلفي من العضد بالطرف العلوي.',
-      'تتكون من ثلاثة رؤوس (رأس طويل، ورأس وحشي، ورأس إنسي).',
-      'هي الباسط الأساسي (Extensor) لمفصل الكوع.',
-      'يغذيها العصب الكعبري (Radial nerve).'
+      'A muscle located in the posterior region of the arm in the upper limb.',
+      'Consists of three heads (long head, lateral head, and medial head).',
+      'It is the primary extensor of the elbow joint.',
+      'Supplied by the radial nerve.'
     ],
-    answers: ['triceps brachii', 'triceps', 'الترايسبس', 'العضلة ذات الرؤوس الثلاثة العضدية', 'ذات الرؤوس الثلاثة', 'ذات الثلاثة رؤوس']
+    answers: ['triceps brachii', 'triceps', 'tricep']
   },
   {
     structure: 'Patella',
     type: 'bone',
     hints: [
-      'عظمة تقع في مقدمة مفصل الركبة.',
-      'هي أكبر عظمة سمسمية (Sesamoid bone) في جسم الإنسان وتوجد داخل وتر العضلة رباعية الرؤوس.',
-      'تحمي السطح الأمامي لمفصل الركبة وتزيد من كفاءة ورافعة العضلة رباعية الرؤوس.',
-      'تسمى شعبياً بالرضفة أو صابونة الركبة.'
+      'A bone located at the front of the knee joint.',
+      'It is the largest sesamoid bone in the human body, situated within the quadriceps tendon.',
+      'Protects the anterior surface of the knee joint and increases the leverage of the quadriceps muscle.',
+      'Commonly called the kneecap.'
     ],
-    answers: ['patella', 'الرضفة', 'الصابونة', 'صابونة الركبة', 'صابونة']
+    answers: ['patella', 'kneecap']
   },
   {
     structure: 'Trapezius',
     type: 'muscle',
     hints: [
-      'عضلة مسطحة وعريضة تغطي الجزء الخلفي من الرقبة وأعلى الظهر.',
-      'تأخذ شكل شبه منحرف وتنقسم لألياف علوية ووسطى وسفلية.',
-      'تساعد في حركة لوح الكتف (رفع، خفض، وتدوير لوح الكتف) ومد الرقبة للخلف.',
-      'يغذيها العصب الشوكي الإضافي (Accessory nerve) الحادي عشر.'
+      'A flat, broad muscle covering the back of the neck and upper back.',
+      'It is trapezoid-shaped and is divided into upper, middle, and lower fibers.',
+      'Assists in shoulder blade movement (elevation, depression, and rotation) and neck extension.',
+      'Supplied by the eleventh accessory nerve (spinal accessory nerve).'
     ],
-    answers: ['trapezius', 'trap', 'traps', 'شبه المنحرفة', 'العضلة شبه المنحرفة', 'الترابيس']
+    answers: ['trapezius', 'trap', 'traps']
   },
   {
     structure: 'Ulnar Nerve',
     type: 'nerve',
     hints: [
-      'عصب يغذي الطرف العلوي ويسير في الجانب الداخلي (إيجابياً) للذراع.',
-      'يمر خلف اللقيمة الإنسية لعظمة العضد وهي المنطقة الحساسة التي نطلق عليها "عظمة الفكاهة" (Funny bone) عند الاصطدام.',
-      'يغذي معظم عضلات اليد الصغيرة (Intrinsic muscles) ويتحكم في الحركات الدقيقة للأصابع.',
-      'إصابته تؤدي إلى حالة اليد المخلبية (Claw hand) وفقدان الإحساس في الخنصر ونصف البنصر.'
+      'A nerve supplying the upper limb, running along the inner side of the arm.',
+      'Passes behind the medial epicondyle of the humerus, the sensitive area known as the funny bone.',
+      'Supplies most of the small intrinsic muscles of the hand and controls fine finger movements.',
+      'Injury leads to claw hand deformity and loss of sensation in the pinky and half of the ring finger.'
     ],
-    answers: ['ulnar nerve', 'ulnar', 'العصب الزندي', 'الزندى', 'الزند', 'عصب زندي']
+    answers: ['ulnar nerve', 'ulnar']
   },
   {
     structure: 'Quadriceps Femoris',
     type: 'muscle',
     hints: [
-      'مجموعة عضلية ضخمة تقع في الجزء الأمامي من الفخذ.',
-      'تتكون من أربعة رؤوس (المستقيمة الفخذية، والمتسعة الوحشية، والمتسعة الإنسية، والمتسعة الوسطى).',
-      'هي الباسط الأساسي (Extensor) لمفصل الركبة وثاني للفخذ.',
-      'يغذيها العصب الفخذي (Femoral nerve).'
+      'A massive muscle group located in the front of the thigh.',
+      'Consists of four heads (rectus femoris, vastus lateralis, vastus medialis, and vastus intermedius).',
+      'It is the primary extensor of the knee joint and flexes the hip.',
+      'Supplied by the femoral nerve.'
     ],
-    answers: ['quadriceps', 'quads', 'quad', 'الرباعية', 'العضلة رباعية الرؤوس', 'العضلة رباعية الرؤوس الفخذية']
+    answers: ['quadriceps', 'quads', 'quad', 'quadriceps femoris']
   },
   {
     structure: 'Scapula',
     type: 'bone',
     hints: [
-      'عظمة مسطحة تقع في الجزء الخلفي العلوي من الجذع.',
-      'تأخذ شكلاً مثلثاً وتسمى شعبياً بعظمة لوح الكتف.',
-      'تتمفصل مع عظمة العضد لتشكل مفصل الكتف ومع عظمة الترقوة.',
-      'تحتوي على نتوءات هامة مثل الأخرم (Acromion) والنتوء الغرابي (Coracoid process).'
+      'A flat bone located in the upper posterior part of the trunk.',
+      'It is triangular-shaped and is commonly called the shoulder blade.',
+      'Articulates with the humerus to form the shoulder joint and with the clavicle.',
+      'Contains important landmarks like the acromion and coracoid process.'
     ],
-    answers: ['scapula', 'لوح الكتف', 'عظمة لوح الكتف', 'عظم لوح الكتف', 'اللوح']
+    answers: ['scapula', 'shoulder blade']
   },
   {
     structure: 'Gluteus Maximus',
     type: 'muscle',
     hints: [
-      'عضلة كبيرة تقع في منطقة الأرداف.',
-      'هي أكبر وأثقل عضلة في جسم الإنسان بالكامل.',
-      'الوظيفة الأساسية لها هي بسط الفخذ (Extension) وتدويره للخارج عند مفصل الفخذ.',
-      'يغذيها العصب الألوي السفلي (Inferior gluteal nerve).'
+      'A large muscle located in the buttocks region.',
+      'It is the largest and heaviest muscle in the entire human body.',
+      'Its primary function is hip extension and lateral rotation of the thigh at the hip joint.',
+      'Supplied by the inferior gluteal nerve.'
     ],
-    answers: ['gluteus maximus', 'gluteus', 'glutes', 'الألوية الكبرى', 'العضلة الألوية الكبرى', 'الألوية عظمى']
+    answers: ['gluteus maximus', 'gluteus', 'glutes']
   }
 ];
 
@@ -1796,18 +1822,18 @@ app.post('/api/games/join', authMiddleware, (req, res) => {
   const username = req.user.username;
   
   if (!roomCode) {
-    return res.status(400).json({ error: 'كود الغرفة مطلوب.' });
+    return res.status(400).json({ error: 'Room code is required.' });
   }
   
   const codeNormalized = roomCode.trim().toUpperCase();
   const room = activeGames.get(codeNormalized);
   
   if (!room) {
-    return res.status(404).json({ error: 'الغرفة غير موجودة. تأكد من الكود.' });
+    return res.status(404).json({ error: 'Room not found. Check the code.' });
   }
   
   if (room.status !== 'waiting') {
-    return res.status(400).json({ error: 'لا يمكن الانضمام، اللعبة بدأت بالفعل.' });
+    return res.status(400).json({ error: 'Cannot join, the game has already started.' });
   }
   
   const isAlreadyIn = room.players.some(p => p.username === username);
@@ -1815,7 +1841,7 @@ app.post('/api/games/join', authMiddleware, (req, res) => {
     room.players.push({ username, score: 0, joinedAt: Date.now() });
     room.answersLog.push({
       type: 'system',
-      text: `انضم ${username} إلى الغرفة.`
+      text: `Joined ${username} to the room.`
     });
   }
   
@@ -1829,15 +1855,15 @@ app.post('/api/games/start', authMiddleware, (req, res) => {
   
   const room = activeGames.get(roomCode?.toUpperCase());
   if (!room) {
-    return res.status(404).json({ error: 'الغرفة غير موجودة.' });
+    return res.status(404).json({ error: 'Room not found.' });
   }
   
   if (room.host !== username) {
-    return res.status(403).json({ error: 'منشئ الغرفة فقط من يمكنه بدء اللعب.' });
+    return res.status(403).json({ error: 'Only the room creator can start the game.' });
   }
   
   if (room.status !== 'waiting') {
-    return res.status(400).json({ error: 'اللعبة بدأت بالفعل.' });
+    return res.status(400).json({ error: 'The game has already started.' });
   }
   
   // Select first question
@@ -1853,7 +1879,7 @@ app.post('/api/games/start', authMiddleware, (req, res) => {
   room.intermissionEndTime = 0;
   room.answersLog = [{
     type: 'system',
-    text: 'بدأت اللعبة! الجولة الأولى.'
+    text: 'Game started! Round 1.'
   }];
   
   res.json(room);
@@ -1865,7 +1891,7 @@ app.get('/api/games/status/:roomCode', authMiddleware, async (req, res) => {
   const room = activeGames.get(roomCode);
   
   if (!room) {
-    return res.status(404).json({ error: 'الغرفة غير موجودة.' });
+    return res.status(404).json({ error: 'Room not found.' });
   }
   
   const now = Date.now();
@@ -1878,7 +1904,7 @@ app.get('/api/games/status/:roomCode', authMiddleware, async (req, res) => {
         room.intermissionEndTime = now;
         room.answersLog.push({
           type: 'system',
-          text: `انتهى الوقت! لم يجب أحد في الوقت المحدد. الإجابة هي: ${room.currentQuestion.structure}`
+          text: `Time out! Nobody answered in time. The answer was: ${room.currentQuestion.structure}`
         });
       }
     }
@@ -1906,15 +1932,15 @@ app.post('/api/games/next-round', authMiddleware, async (req, res) => {
   
   const room = activeGames.get(roomCode?.toUpperCase());
   if (!room) {
-    return res.status(404).json({ error: 'الغرفة غير موجودة.' });
+    return res.status(404).json({ error: 'Room not found.' });
   }
   
   if (room.host !== username) {
-    return res.status(403).json({ error: 'منشئ الغرفة فقط من يمكنه الانتقال للجولة التالية.' });
+    return res.status(403).json({ error: 'Only the room creator can move to the next round.' });
   }
   
   if (room.status !== 'playing' || !room.roundWinner) {
-    return res.status(400).json({ error: 'لا يمكن الانتقال للجولة التالية الآن.' });
+    return res.status(400).json({ error: 'Cannot move to the next round now.' });
   }
   
   const now = Date.now();
@@ -1929,7 +1955,7 @@ app.post('/api/games/next-round', authMiddleware, async (req, res) => {
     room.intermissionEndTime = 0;
     room.answersLog.push({
       type: 'system',
-      text: `الجولة ${room.currentRound} بدأت!`
+      text: `Round ${room.currentRound} started!`
     });
   } else {
     room.status = 'finished';
@@ -1957,7 +1983,7 @@ app.post('/api/games/next-round', authMiddleware, async (req, res) => {
         );
         room.answersLog.push({
           type: 'system',
-          text: `مبروك للفائز ${winnerName}! حصل على ${xpRewarded} XP 🎉`
+          text: `Congratulations to the winner ${winnerName}! Received ${xpRewarded} XP 🎉`
         });
       } catch (err) {
         console.error('Failed to reward XP:', err);
@@ -1966,7 +1992,7 @@ app.post('/api/games/next-round', authMiddleware, async (req, res) => {
       room.xpRewarded = 0;
       room.answersLog.push({
         type: 'system',
-        text: 'انتهت اللعبة بدون فائز يحمل نقاط.'
+        text: 'Game ended with no winning players.'
       });
     }
   }
@@ -1993,11 +2019,11 @@ app.post('/api/games/submit-answer', authMiddleware, (req, res) => {
   
   const room = activeGames.get(roomCode?.toUpperCase());
   if (!room) {
-    return res.status(404).json({ error: 'الغرفة غير موجودة.' });
+    return res.status(404).json({ error: 'Room not found.' });
   }
   
   if (room.status !== 'playing' || room.roundWinner) {
-    return res.status(400).json({ error: 'لا توجد جولة نشطة لاستقبال الإجابات حالياً.' });
+    return res.status(400).json({ error: 'There is no active round to receive answers now.' });
   }
   
   const normalizedUserAnswer = normalizeAnswer(answer);
@@ -2021,7 +2047,7 @@ app.post('/api/games/submit-answer', authMiddleware, (req, res) => {
     
     room.answersLog.push({
       type: 'correct',
-      text: `🎉 إجابة صحيحة من ${username}! (+${scoreEarned} نقطة) - الهيكل هو: ${room.currentQuestion.structure}`
+      text: `🎉 Correct answer from ${username}! (+${scoreEarned} points) - The structure is: ${room.currentQuestion.structure}`
     });
     
     res.json({ isCorrect: true, room });
@@ -2041,13 +2067,13 @@ app.post('/api/games/leave', authMiddleware, (req, res) => {
   
   const room = activeGames.get(roomCode?.toUpperCase());
   if (!room) {
-    return res.status(404).json({ error: 'الغرفة غير موجودة.' });
+    return res.status(404).json({ error: 'Room not found.' });
   }
   
   room.players = room.players.filter(p => p.username !== username);
   room.answersLog.push({
     type: 'system',
-    text: `غادر ${username} الغرفة.`
+    text: `Left ${username} the room.`
   });
   
   if (room.players.length === 0) {
@@ -2056,7 +2082,7 @@ app.post('/api/games/leave', authMiddleware, (req, res) => {
     room.host = room.players[0].username;
   }
   
-  res.json({ message: 'تمت المغادرة بنجاح.' });
+  res.json({ message: 'Left successfully.' });
 });
 
 
@@ -2136,7 +2162,7 @@ app.get('/api/community/posts', async (req, res) => {
     res.json(formatted);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء جلب المنشورات.' });
+    res.status(500).json({ error: 'An error occurred while fetching posts.' });
   }
 });
 
@@ -2144,7 +2170,7 @@ app.get('/api/community/posts', async (req, res) => {
 app.post('/api/community/posts', authMiddleware, async (req, res) => {
   const { content } = req.body;
   if (!content || content.trim() === '') {
-    return res.status(400).json({ error: 'لا يمكن إضافة منشور فارغ.' });
+    return res.status(400).json({ error: 'Cannot publish an empty post.' });
   }
 
   try {
@@ -2159,7 +2185,7 @@ app.post('/api/community/posts', authMiddleware, async (req, res) => {
     await db.run('UPDATE users SET total_xp = ?, weekly_xp = ? WHERE id = ?', [newTotalXp, newWeeklyXp, req.user.id]);
 
     res.status(201).json({ 
-      message: 'تم النشر بنجاح! حصلت على +10 XP ⚡',
+      message: 'Published successfully! You earned +10 XP ⚡',
       xp_reward: 10,
       total_xp: newTotalXp,
       weekly_xp: newWeeklyXp,
@@ -2167,7 +2193,7 @@ app.post('/api/community/posts', authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء النشر.' });
+    res.status(500).json({ error: 'An error occurred while publishing.' });
   }
 });
 
@@ -2179,7 +2205,7 @@ app.post('/api/community/posts/:id/like', authMiddleware, async (req, res) => {
   try {
     const post = await db.get('SELECT id, likes_count FROM community_posts WHERE id = ?', [postId]);
     if (!post) {
-      return res.status(404).json({ error: 'المنشور غير موجود.' });
+      return res.status(404).json({ error: 'Post not found.' });
     }
 
     const existingLike = await db.get('SELECT id FROM community_post_likes WHERE user_id = ? AND post_id = ?', [userId, postId]);
@@ -2197,7 +2223,7 @@ app.post('/api/community/posts/:id/like', authMiddleware, async (req, res) => {
     }
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'حدث خطأ أثناء الإعجاب بالمنشور.' });
+    res.status(500).json({ error: 'An error occurred while liking the post.' });
   }
 });
 

@@ -86,11 +86,11 @@ export const Profile: React.FC<ProfileProps> = ({
         {/* Stats Badges Grid */}
         <div className="stats-badge-grid" style={{ gridTemplateColumns: '1fr 1fr', width: '100%', marginBottom: '1.5rem' }}>
           <div className="glass-card" style={{ background: '#0A0A0A' }}>
-            <span className="stat-badge-label">إجمالي الـ XP</span>
+            <span className="stat-badge-label">Total XP</span>
             <div className="stat-badge-value" style={{ fontSize: '20px' }}>{user.total_xp}</div>
           </div>
           <div className="glass-card" style={{ background: '#0A0A0A' }}>
-            <span className="stat-badge-label">سلسلة الدخول</span>
+            <span className="stat-badge-label">Login Streak</span>
             <div className="stat-badge-value" style={{ fontSize: '20px' }}>{user.streak_count} 🔥</div>
           </div>
         </div>
@@ -98,11 +98,11 @@ export const Profile: React.FC<ProfileProps> = ({
         {/* Equipment customization */}
         {unlockedCosmetics.length > 0 && (
           <div className="glass-card" style={{ width: '100%', background: '#0A0A0A', textAlign: 'right', marginBottom: '1.5rem' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 800, marginBottom: '0.75rem', color: 'var(--orange)' }}>تخصيص المظهر (Equip Cosmetics)</h4>
+            <h4 style={{ fontSize: '13px', fontWeight: 800, marginBottom: '0.75rem', color: 'var(--orange)' }}>Equip Cosmetics</h4>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div>
-                <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>تفعيل الإطار المتوهج:</label>
+                <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Equip Glow Frame:</label>
                 <select
                   className="pl-input"
                   value={equippedFrame}
@@ -112,14 +112,14 @@ export const Profile: React.FC<ProfileProps> = ({
                   }}
                   style={{ marginTop: '4px' }}
                 >
-                  <option value="none">بدون إطار</option>
+                  <option value="none">No Frame</option>
                   {unlockedCosmetics.includes('gold-glow') && <option value="gold-glow">Gold Glow Frame 🌟</option>}
                   {unlockedCosmetics.includes('neon-ring') && <option value="neon-ring">Neon Ring Frame 🩵</option>}
                 </select>
               </div>
 
               <div>
-                <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>تفعيل اللقب المكتسب:</label>
+                <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Equip Title:</label>
                 <select
                   className="pl-input"
                   value={equippedTitle}
@@ -129,9 +129,9 @@ export const Profile: React.FC<ProfileProps> = ({
                   }}
                   style={{ marginTop: '4px' }}
                 >
-                  <option value="none">بدون لقب</option>
-                  {unlockedCosmetics.includes('neuro-specialist') && <option value="أخصائي نيورو 🧠">أخصائي نيورو 🧠</option>}
-                  {unlockedCosmetics.includes('diagnosis-legend') && <option value="أسطورة التشخيص 👑">أسطورة التشخيص 👑</option>}
+                  <option value="none">No Title</option>
+                  {unlockedCosmetics.includes('neuro-specialist') && <option value="Neuro Specialist 🧠">Neuro Specialist 🧠</option>}
+                  {unlockedCosmetics.includes('diagnosis-legend') && <option value="Diagnosis Legend 👑">Diagnosis Legend 👑</option>}
                 </select>
               </div>
             </div>
@@ -142,11 +142,11 @@ export const Profile: React.FC<ProfileProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
           {user.role === 'admin' && (
             <button className="btn-primary" onClick={() => setCurrentPage('admin')}>
-              <i className="ti ti-shield-lock"></i> لوحة التحكم للمشرف
+              <i className="ti ti-shield-lock"></i> Admin Dashboard
             </button>
           )}
           <button className="btn-outline" onClick={handleLogout}>
-            تسجيل الخروج من الحساب
+            Logout
           </button>
         </div>
       </div>

@@ -63,7 +63,7 @@ html, body {
   overflow-y: auto;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Cairo', 'Outfit', sans-serif;
+  font-family: 'Outfit', 'Outfit', sans-serif;
   min-height: 100vh;
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
@@ -159,7 +159,7 @@ html, body {
   color: var(--text-secondary);
   padding: 1rem 1.25rem;
   border-radius: var(--radius-sm);
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 15px;
   font-weight: 700;
   display: flex;
@@ -315,7 +315,7 @@ html, body {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-weight: 700;
   font-size: 11px;
   display: flex;
@@ -442,7 +442,7 @@ html, body {
   border-radius: 12px;
   padding: 12px 16px;
   color: #fff;
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 14px;
   width: 100%;
   transition: var(--transition);
@@ -558,10 +558,15 @@ html, body {
 }
 
 .title-link {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
   color: var(--orange);
   text-decoration: none;
   font-size: 13px;
   font-weight: 700;
+  font-family: inherit;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -569,7 +574,16 @@ html, body {
 }
 
 .title-link:hover {
+  color: var(--amber);
   text-shadow: 0 0 10px rgba(255,106,0,0.3);
+}
+
+.title-link i {
+  transition: transform 0.2s ease;
+}
+
+.title-link:hover i {
+  transform: translateX(-3px);
 }
 
 /* Home Hero Card */
@@ -1277,7 +1291,7 @@ html, body {
   color: var(--text-secondary);
   padding: 10px;
   border-radius: 8px;
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-weight: 700;
   font-size: 13.5px;
   cursor: pointer;
@@ -1692,7 +1706,7 @@ html, body {
   border-radius: 12px;
   padding: 12px;
   color: #fff;
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 14px;
   resize: none;
   min-height: 80px;
@@ -1740,7 +1754,7 @@ html, body {
   padding: 12px 16px;
   color: #fff;
   text-align: right;
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-weight: 700;
   font-size: 13.5px;
   cursor: pointer;
@@ -1856,7 +1870,7 @@ html, body {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 13px;
   font-weight: 700;
   display: flex;
@@ -2281,7 +2295,7 @@ html, body {
   color: var(--text-primary);
   padding: 10px 14px;
   border-radius: 12px;
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
@@ -2401,4 +2415,14 @@ html, body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.pl-chat-scroll-down-btn:hover {
+  background: var(--orange) !important;
+  transform: translateY(2px) scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 106, 0, 0.6) !important;
+}
+
+.pl-chat-scroll-down-btn:active {
+  transform: translateY(1px) scale(0.95);
 }

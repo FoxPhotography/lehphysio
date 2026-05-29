@@ -31,96 +31,96 @@ export const Rewards: React.FC<RewardsProps> = ({
   return (
     <div className="rewards-panel animate-fade-in">
       <div className="pl-section-h2">
-        <span className="title-text"><i className="ti ti-gift"></i> مركز المكافآت ومتجر الـ XP</span>
+        <span className="title-text"><i className="ti ti-gift"></i> Reward Center & XP Shop</span>
       </div>
 
       <section className="stats-badge-grid" style={{ gridTemplateColumns: '1fr' }}>
         {/* Secret Code Input */}
         <div className="glass-card">
-          <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '0.5rem' }}>🔑 استرداد رمز الـ XP السري</h3>
-          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '1rem' }}>ادخل الأكواد الخاصة بصفحات السوشيال ميديا أو الحلقات لكسب نقاط فورية.</p>
+          <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '0.5rem' }}>🔑 Redeem Secret XP Code</h3>
+          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Enter codes from social media or episodes to get instant points.</p>
           {redeemError && <div className="pl-form-error">{redeemError}</div>}
           {redeemSuccess && <div className="pl-form-success">{redeemSuccess}</div>}
           <form onSubmit={handleRedeem} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <input
               type="text"
               className="pl-input"
-              placeholder="اكتب كود المكافأة هنا"
+              placeholder="Enter reward code here"
               value={secretCode}
               onChange={(e) => setSecretCode(e.target.value)}
             />
-            <button type="submit" className="btn-primary" style={{ width: '100%' }}>تفعيل الكود</button>
+            <button type="submit" className="btn-primary" style={{ width: '100%' }}>Redeem Code</button>
           </form>
         </div>
 
         {/* Daily chest rewards box */}
         <div className="glass-card mystery-chest-panel">
-          <h3 style={{ fontSize: '16px', fontWeight: 800 }}>📦 صندوق المفاجآت اليومي</h3>
+          <h3 style={{ fontSize: '16px', fontWeight: 800 }}>📦 Daily Surprise Box</h3>
           <div className="chest-box-visual" onClick={() => {
-            showToast('فتحت صندوق المفاجآت اليومي! ربحت +50 XP ⚡');
+            showToast('Opened daily surprise box! You earned +50 XP ⚡');
             triggerXpPopup(50);
             playChatSound('win');
             claimMockReward(50);
           }}>
             📦
           </div>
-          <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>اضغط على الصندوق لفتحه والحصول على بونص يومي عشوائي!</p>
+          <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Click the box to open it and receive a random daily bonus!</p>
         </div>
       </section>
 
       {/* XP Shop Grid */}
       <section style={{ marginTop: '2.5rem' }}>
-        <h3 className="pl-section-h2"><span className="title-text"><i className="ti ti-shopping-cart"></i> متجر مستحضرات المظهر (XP Shop)</span></h3>
+        <h3 className="pl-section-h2"><span className="title-text"><i className="ti ti-shopping-cart"></i> Cosmetics Shop (XP Shop)</span></h3>
         <div className="rewards-shop-grid">
           <div className="shop-item-card glass-card">
             <div className="shop-item-preview-box avatar-frame-gold-glow">🌟</div>
-            <h4 className="shop-item-title">الإطار الذهبي المتوهج</h4>
+            <h4 className="shop-item-title">Golden Glowing Frame</h4>
             <span className="shop-item-cost">500 XP</span>
             <button
               className="btn-primary mini"
               onClick={() => handleShopPurchase('gold-glow', 500)}
               disabled={unlockedCosmetics.includes('gold-glow')}
             >
-              {unlockedCosmetics.includes('gold-glow') ? 'تم الشراء' : 'شراء العنصر'}
+              {unlockedCosmetics.includes('gold-glow') ? 'Purchased' : 'Buy Item'}
             </button>
           </div>
 
           <div className="shop-item-card glass-card">
             <div className="shop-item-preview-box avatar-frame-neon-ring">🩵</div>
-            <h4 className="shop-item-title">إطار النيون الأزرق</h4>
+            <h4 className="shop-item-title">Neon Blue Ring</h4>
             <span className="shop-item-cost">800 XP</span>
             <button
               className="btn-primary mini"
               onClick={() => handleShopPurchase('neon-ring', 800)}
               disabled={unlockedCosmetics.includes('neon-ring')}
             >
-              {unlockedCosmetics.includes('neon-ring') ? 'تم الشراء' : 'شراء العنصر'}
+              {unlockedCosmetics.includes('neon-ring') ? 'Purchased' : 'Buy Item'}
             </button>
           </div>
 
           <div className="shop-item-card glass-card">
             <div className="shop-item-preview-box">🧠</div>
-            <h4 className="shop-item-title">لقب "أخصائي نيورو"</h4>
+            <h4 className="shop-item-title">Title: "Neuro Specialist"</h4>
             <span className="shop-item-cost">1,500 XP</span>
             <button
               className="btn-primary mini"
               onClick={() => handleShopPurchase('neuro-specialist', 1500)}
               disabled={unlockedCosmetics.includes('neuro-specialist')}
             >
-              {unlockedCosmetics.includes('neuro-specialist') ? 'تم الشراء' : 'شراء العنصر'}
+              {unlockedCosmetics.includes('neuro-specialist') ? 'Purchased' : 'Buy Item'}
             </button>
           </div>
 
           <div className="shop-item-card glass-card">
             <div className="shop-item-preview-box">👑</div>
-            <h4 className="shop-item-title">لقب "أسطورة التشخيص"</h4>
+            <h4 className="shop-item-title">Title: "Diagnosis Legend"</h4>
             <span className="shop-item-cost">2,000 XP</span>
             <button
               className="btn-primary mini"
               onClick={() => handleShopPurchase('diagnosis-legend', 2000)}
               disabled={unlockedCosmetics.includes('diagnosis-legend')}
             >
-              {unlockedCosmetics.includes('diagnosis-legend') ? 'تم الشراء' : 'شراء العنصر'}
+              {unlockedCosmetics.includes('diagnosis-legend') ? 'Purchased' : 'Buy Item'}
             </button>
           </div>
         </div>

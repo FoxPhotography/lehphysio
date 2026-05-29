@@ -18,12 +18,12 @@ export const Login: React.FC<LoginProps> = ({
   return (
     <div className="auth-panel animate-fade-in" style={{ maxWidth: '400px', margin: '4rem auto' }}>
       <div className="glass-card" style={{ padding: '2rem' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', marginBottom: '0.25rem' }}>تسجيل الدخول</h2>
-        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '2rem' }}>مرحبًا بك مجدداً في عائلة ليه فيزيو؟</p>
+        <h2 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', marginBottom: '0.25rem' }}>Login</h2>
+        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '2rem' }}>Welcome back to Why Physio? family</p>
         {authError && <div className="pl-form-error">{authError}</div>}
         <form onSubmit={handleLogin}>
           <div className="pl-form-group">
-            <label>اسم المستخدم</label>
+            <label>Username</label>
             <input
               type="text"
               className="pl-input"
@@ -33,7 +33,7 @@ export const Login: React.FC<LoginProps> = ({
             />
           </div>
           <div className="pl-form-group">
-            <label>كلمة المرور</label>
+            <label>Password</label>
             <input
               type="password"
               className="pl-input"
@@ -42,10 +42,10 @@ export const Login: React.FC<LoginProps> = ({
               required
             />
           </div>
-          <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1rem' }}>دخول</button>
+          <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1rem' }}>Login</button>
         </form>
         <div style={{ textAlign: 'center', fontSize: '13px', marginTop: '1.5rem', color: 'var(--text-secondary)' }}>
-          ليس لديك حساب؟ <button onClick={() => setCurrentPage('register')} style={{ background: 'transparent', border: 'none', color: 'var(--orange)', fontWeight: 800, cursor: 'pointer' }}>إنشاء حساب</button>
+          Don't have an account? <button onClick={() => setCurrentPage('register')} style={{ background: 'transparent', border: 'none', color: 'var(--orange)', fontWeight: 800, cursor: 'pointer' }}>Register</button>
         </div>
       </div>
     </div>

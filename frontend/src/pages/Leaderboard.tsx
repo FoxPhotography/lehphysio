@@ -16,15 +16,15 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({
   return (
     <div className="leaderboard-panel animate-fade-in">
       <div className="pl-section-h2">
-        <span className="title-text"><i className="ti ti-trophy"></i> لوحة صدارة ليه فيزيو؟</span>
+        <span className="title-text"><i className="ti ti-trophy"></i> Why Physio? Leaderboard</span>
       </div>
       
       {/* Toggle tabs */}
       <section className="games-filter-tabs">
-        <button className={`games-filter-btn ${leaderboardTab === 'all-time' ? 'active' : ''}`} onClick={() => setLeaderboardTab('all-time')}>كل الوقت</button>
-        <button className={`games-filter-btn ${leaderboardTab === 'weekly' ? 'active' : ''}`} onClick={() => setLeaderboardTab('weekly')}>أسبوعي</button>
+        <button className={`games-filter-btn ${leaderboardTab === 'all-time' ? 'active' : ''}`} onClick={() => setLeaderboardTab('all-time')}>All-Time</button>
+        <button className={`games-filter-btn ${leaderboardTab === 'weekly' ? 'active' : ''}`} onClick={() => setLeaderboardTab('weekly')}>Weekly</button>
         {user && (
-          <button className={`games-filter-btn ${leaderboardTab === 'batch' ? 'active' : ''}`} onClick={() => setLeaderboardTab('batch')}>دفعتي ({user.batch})</button>
+          <button className={`games-filter-btn ${leaderboardTab === 'batch' ? 'active' : ''}`} onClick={() => setLeaderboardTab('batch')}>My Batch ({user.batch})</button>
         )}
       </section>
 

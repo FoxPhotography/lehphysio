@@ -43,7 +43,7 @@ export const Home: React.FC<HomeProps> = ({
       {loginReward && loginReward.daily_login && (
         <div className="pl-banner">
           <i className="ti ti-gift"></i>
-          <span>أهلاً بعودتك! حصلت على <strong>+10 XP</strong> لتسجيل دخولك اليومي.</span>
+          <span>Welcome back! You earned <strong>+10 XP</strong> for your daily login.</span>
         </div>
       )}
 
@@ -60,7 +60,7 @@ export const Home: React.FC<HomeProps> = ({
           </div>
           <h2 className="hero-title">SPASM</h2>
           <h3 className="hero-title" style={{ fontSize: '18px', fontWeight: 600, color: 'var(--orange)' }}>Upper Motor Neuron</h3>
-          <p className="hero-desc">شرح تفصيلي لتشنج العضلات الناتج عن إصابات الجهاز العصبي المركزي وميكانيكا التحكم.</p>
+          <p className="hero-desc">A detailed explanation of muscle spasticity resulting from central nervous system injuries and control mechanics.</p>
           <div className="hero-actions-row">
             <button className="btn-primary" onClick={() => navigateToEpisode(1)}>
               <i className="ti ti-player-play"></i> Watch Now
@@ -75,8 +75,8 @@ export const Home: React.FC<HomeProps> = ({
       {/* Streak & Streak Panel */}
       <section className="streak-row-wrapper">
         <div className="streak-welcome-text">
-          <h1>ليه فيزيو؟ 🔥</h1>
-          <p>استمع. تعلّم. ارتقِ بمستواك.</p>
+          <h1>Why Physio? 🔥</h1>
+          <p>Listen. Learn. Elevate your level.</p>
         </div>
         <button className="streak-badge" onClick={() => setCurrentPage('profile')}>
           <i className="ti ti-flame" style={{ fontSize: '20px' }}></i>
@@ -260,12 +260,12 @@ export const Home: React.FC<HomeProps> = ({
       {/* Community Feed */}
       <section className="community-preview-section">
         <div className="pl-section-h2" style={{ marginBottom: '1.5rem' }}>
-          <span className="title-text"><i className="ti ti-news"></i> منشورات مجتمع "ليه فيزيو؟"</span>
+          <span className="title-text"><i className="ti ti-news"></i> Why Physio? Community Feed</span>
         </div>
 
         {/* Poll of the Day */}
         <div className="daily-poll-card" style={{ marginBottom: '1.5rem' }}>
-          <h3 className="poll-question">📊 سؤال اليوم الطبي التفاعلي: ما هو العصب المغذي لعضلة الدالية (Deltoid)؟</h3>
+          <h3 className="poll-question">📊 Interactive Medical Question of the Day: What is the nerve supplying the Deltoid muscle?</h3>
           <div className="poll-options-list">
             {['Axillary nerve', 'Radial nerve', 'Median nerve', 'Musculocutaneous nerve'].map((option, idx) => {
               const totalV = pollVotes.reduce((a,b) => a+b, 0);
@@ -290,7 +290,7 @@ export const Home: React.FC<HomeProps> = ({
           </div>
           {hasVotedPoll && (
             <p style={{ fontSize: '11px', color: 'var(--amber)', marginTop: '0.75rem', fontWeight: 800 }}>
-              حصلت على +30 XP للمشاركة في الاستطلاع التفاعلي! ⚡
+              You earned +30 XP for participating in the interactive poll! ⚡
             </p>
           )}
         </div>
@@ -303,14 +303,14 @@ export const Home: React.FC<HomeProps> = ({
               <div className="composer-main">
                 <textarea
                   className="composer-textarea"
-                  placeholder="ماذا يدور في ذهنك اليوم يا بطل؟ شارك سؤالك أو إنجازك..."
+                  placeholder="What's on your mind today, champ? Share your question or achievement..."
                   value={newPostContent}
                   onChange={(e) => setNewPostContent(e.target.value)}
                   maxLength={300}
                 ></textarea>
                 <div className="composer-actions">
                   <button type="submit" className="btn-primary mini" disabled={!newPostContent.trim()}>
-                    نشر المنشور <i className="ti ti-send"></i>
+                    Publish Post <i className="ti ti-send"></i>
                   </button>
                 </div>
               </div>
@@ -321,7 +321,7 @@ export const Home: React.FC<HomeProps> = ({
         {/* Posts feed */}
         <div className="leaderboard-list-container">
           {communityPosts.length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0' }}>لا توجد منشورات حالياً.</p>
+            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0' }}>No posts available at the moment.</p>
           ) : (
             communityPosts.map((post: any) => (
               <div key={post.id} className="community-feed-item glass-card" style={{ marginBottom: '1rem' }}>
@@ -344,8 +344,8 @@ export const Home: React.FC<HomeProps> = ({
                   <button className={`feed-action-btn ${post.isLiked ? 'active' : ''}`} onClick={() => handleLikePost(post.id)}>
                     <i className={post.isLiked ? 'ti ti-heart-filled' : 'ti-heart'}></i> {post.likes_count}
                   </button>
-                  <button className="feed-action-btn" onClick={() => showToast('التعليقات قادمة قريباً 💬')}>
-                    <i className="ti ti-message-circle"></i> تعليق
+                  <button className="feed-action-btn" onClick={() => showToast('Comments coming soon 💬')}>
+                    <i className="ti ti-message-circle"></i> Comment
                   </button>
                 </div>
               </div>

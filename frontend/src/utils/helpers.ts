@@ -1,9 +1,20 @@
 // Web Audio API Sound Generator (Zero external dependencies)
+let globalAudioCtx: any = null;
+
 export const playChatSound = (type: 'send' | 'receive' | 'react' | 'success' | 'error' | 'start' | 'win' | 'tick') => {
   try {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
+    
+    if (!globalAudioCtx) {
+      globalAudioCtx = new AudioContextClass();
+    }
+    const ctx = globalAudioCtx;
+    
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    
     const now = ctx.currentTime;
     
     if (type === 'send') {

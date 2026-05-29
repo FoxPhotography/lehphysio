@@ -137,6 +137,8 @@ function App() {
   const [adminSubmitting, setAdminSubmitting] = useState(false);
   const [adminMessage, setAdminMessage] = useState('');
   const [adminCodeForm, setAdminCodeForm] = useState({ code: '', xp_reward: 50, type: 'social', max_uses: 1000, expiry_date: '' });
+  const [adminSuggestions, setAdminSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
   // References
   const chatMessagesRef = useRef(chatMessages);
@@ -197,6 +199,7 @@ function App() {
     fetchEpisodes();
     fetchCommunityPosts();
     fetchLeaderboard();
+    fetchPublicSuggestions();
 
     // Check query parameters for referral
     const params = new URLSearchParams(window.location.search);
@@ -216,7 +219,7 @@ function App() {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          showToast(`لقد دخلت عبر رابط مشاركة من @${refUsername}! 🎉`);
+          showToast(`You joined via a share link from @${refUsername}! 🎉`);
         }
       })
       .catch(err => console.error('Error tracking referral:', err));
@@ -242,9 +245,9 @@ function App() {
         const hasNewMessages = chatMessages.length > prevMessagesCountRef.current;
         const lastMsg = chatMessages[chatMessages.length - 1];
         const sentByMe = lastMsg && user && lastMsg.username === user.username;
-        const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 250;
+        const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
 
-        if (isPageChange || sentByMe || (hasNewMessages && isNearBottom)) {
+        if (isPageChange || (hasNewMessages && (sentByMe || isNearBottom))) {
           el.scrollTop = el.scrollHeight;
         }
       }
@@ -293,7 +296,7 @@ function App() {
       isOpen: true,
       title,
       message,
-      confirmText: 'موافق',
+      confirmText: 'OK',
       onConfirm: () => setCustomModal(null),
       type
     });
@@ -304,8 +307,8 @@ function App() {
     message: string,
     onConfirm: () => void,
     onCancel?: () => void,
-    confirmText: string = 'تأكيد',
-    cancelText: string = 'إلغاء',
+    confirmText: string = 'Confirm',
+    cancelText: string = 'Cancel',
     type: 'danger' | 'info' | 'success' | 'warning' = 'warning'
   ) => {
     setCustomModal({
@@ -367,6 +370,206 @@ function App() {
     }
   };
 
+  const fetchAdminUsers = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/users`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) setAdminUsers(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchAdminCodes = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/xp-codes`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) setAdminCodes(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchAdminSuggestions = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/suggestions`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) setAdminSuggestions(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchPublicSuggestions = async () => {
+    try {
+      const activeToken = localStorage.getItem('token') || token;
+      const res = await fetch(`${API_BASE}/api/suggestions`, {
+        headers: activeToken ? { 'Authorization': `Bearer ${activeToken}` } : {}
+      });
+      const data = await res.json();
+      if (res.ok) setSuggestions(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleAdminCreateCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setAdminSubmitting(true);
+    setAdminMessage('');
+    try {
+      const res = await fetch(`${API_BASE}/api/xp-codes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          code: adminCodeForm.code,
+          xp_reward: Number(adminCodeForm.xp_reward),
+          type: adminCodeForm.type,
+          max_uses: Number(adminCodeForm.max_uses),
+          expiry_date: adminCodeForm.expiry_date || null
+        })
+      });
+      const data = await res.json();
+      setAdminMessage(data.message || data.error);
+      if (res.ok) {
+        showToast('XP Code created successfully! 🔑');
+        fetchAdminCodes();
+        setAdminCodeForm({ code: '', xp_reward: 50, type: 'social', max_uses: 1000, expiry_date: '' });
+      }
+    } catch (err) {
+      setAdminMessage('Failed to connect to the server.');
+    } finally {
+      setAdminSubmitting(false);
+    }
+  };
+
+  const handleAdminToggleUserRole = async (userId: number, currentRole: string) => {
+    if (!token) return;
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    showConfirm(
+      'Change User Role',
+      `Are you sure you want to change this user's role to ${newRole === 'admin' ? 'Admin' : 'Student'}?`,
+      async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/admin/users/${userId}/role`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ role: newRole })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showToast(data.message || 'User role updated! 🎉');
+            fetchAdminUsers();
+          } else {
+            showToast(data.error || 'Failed to update role.');
+          }
+        } catch (e) {
+          showToast('Connection failed.');
+        }
+      }
+    );
+  };
+
+  const handleAdminUpdateSuggestionStatus = async (suggestionId: number, status: 'approved' | 'rejected') => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/suggestions/${suggestionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        showToast(`Suggestion marked as ${status}! 💡`);
+        fetchAdminSuggestions();
+        fetchPublicSuggestions();
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Failed to update suggestion.');
+      }
+    } catch (e) {
+      showToast('Connection failed.');
+    }
+  };
+
+  const handleCreateSuggestion = async (title: string, content: string) => {
+    if (!token) {
+      showToast('You must be logged in to submit a suggestion. 🔐');
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/api/suggestions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title, content })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Thank you! Suggestion submitted successfully. 💡');
+        fetchPublicSuggestions();
+        triggerXpPopup(50);
+        fetchUserProfile();
+      } else {
+        showToast(data.error || 'Failed to submit suggestion.');
+      }
+    } catch (e) {
+      showToast('Connection failed.');
+    }
+  };
+
+  const handleUpvoteSuggestion = async (suggestionId: number) => {
+    if (!token) {
+      showToast('You must be logged in to upvote suggestions. 🔐');
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/api/suggestions/${suggestionId}/upvote`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        playChatSound('success');
+        fetchPublicSuggestions();
+      } else {
+        showToast(data.error || 'Failed to upvote.');
+      }
+    } catch (e) {
+      showToast('Connection failed.');
+    }
+  };
+
+  useEffect(() => {
+    if (currentPage === 'admin' && user?.role === 'admin') {
+      fetchAdminUsers();
+      fetchAdminCodes();
+      fetchAdminSuggestions();
+    }
+  }, [currentPage, user, token]);
+
   const fetchChatMessages = async () => {
     try {
       const headers: any = {};
@@ -405,7 +608,7 @@ function App() {
   };
 
   const handleCreateGameRoom = async () => {
-    if (!token) { showToast('يرجى تسجيل الدخول للعب 🔐'); return; }
+    if (!token) { showToast('Please login to play 🔐'); return; }
     setIsGameLoading(true);
     setGameError('');
     try {
@@ -422,15 +625,15 @@ function App() {
         setGameError(data.error);
       }
     } catch (e) {
-      setGameError('فشل الاتصال بالخادم.');
+      setGameError('Connection to server failed.');
     } finally {
       setIsGameLoading(false);
     }
   };
 
   const handleJoinGameRoom = async (code: string) => {
-    if (!token) { showToast('يرجى تسجيل الدخول للعب 🔐'); return; }
-    if (!code) { setGameError('أدخل كود الغرفة.'); return; }
+    if (!token) { showToast('Please login to play 🔐'); return; }
+    if (!code) { setGameError('Enter room code.'); return; }
     setIsGameLoading(true);
     setGameError('');
     try {
@@ -448,7 +651,7 @@ function App() {
         setGameError(data.error);
       }
     } catch (e) {
-      setGameError('كود الغرفة غير صحيح.');
+      setGameError('Incorrect room code.');
     } finally {
       setIsGameLoading(false);
     }
@@ -530,7 +733,7 @@ function App() {
     setRedeemError('');
     setRedeemSuccess('');
     if (!token) {
-      setRedeemError('يرجى تسجيل الدخول أولاً.');
+      setRedeemError('Please login first.');
       return;
     }
     try {
@@ -552,7 +755,7 @@ function App() {
         playChatSound('error');
       }
     } catch (e) {
-      setRedeemError('فشل تفعيل الكود.');
+      setRedeemError('Failed to activate code.');
     }
   };
 
@@ -588,7 +791,7 @@ function App() {
         setAuthError(data.error);
       }
     } catch (err) {
-      setAuthError('حدث خطأ في الاتصال.');
+      setAuthError('Connection error occurred.');
     }
   };
 
@@ -614,7 +817,7 @@ function App() {
         setAuthError(data.error);
       }
     } catch (e) {
-      setAuthError('حدث خطأ في الاتصال.');
+      setAuthError('Connection error occurred.');
     }
   };
 
@@ -642,7 +845,7 @@ function App() {
         setAuthError(data.error);
       }
     } catch (e) {
-      setAuthError('فشل تفعيل الحساب.');
+      setAuthError('Failed to activate account.');
     }
   };
 
@@ -747,7 +950,7 @@ function App() {
   };
 
   const handleLikePost = async (postId: number) => {
-    if (!token) { showToast('سجل دخولك للتفاعل 🔐'); return; }
+    if (!token) { showToast('Login to interact 🔐'); return; }
     try {
       // Optimistic state update
       setCommunityPosts(prev => prev.map(p => {
@@ -910,11 +1113,11 @@ function App() {
       if (res.ok) {
         setChatInput('');
         setEditingMessage(null);
-        showToast('تم تعديل الرسالة بنجاح');
+        showToast('Message edited successfully');
         fetchChatMessages();
       } else {
         const data = await res.json();
-        showToast(data.error || 'فشل تعديل الرسالة');
+        showToast(data.error || 'Failed to edit message');
       }
     } catch (err) {
       console.error(err);
@@ -924,8 +1127,8 @@ function App() {
   const handleDeleteMessage = async (messageId: number) => {
     if (!token) return;
     showConfirm(
-      'حذف الرسالة',
-      'هل أنت متأكد من رغبتك في حذف هذه الرسالة؟',
+      'Delete Message',
+      'Are you sure you want to delete this message?',
       async () => {
         try {
           const res = await fetch(`${API_BASE}/api/chat/${messageId}`, {
@@ -933,11 +1136,11 @@ function App() {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (res.ok) {
-            showToast('تم حذف الرسالة');
+            showToast('Message deleted');
             fetchChatMessages();
           } else {
             const data = await res.json();
-            showToast(data.error || 'فشل حذف الرسالة');
+            showToast(data.error || 'Failed to delete message');
           }
         } catch (err) {
           console.error(err);
@@ -949,8 +1152,8 @@ function App() {
   const handleBulkDeleteMessages = async () => {
     if (!token || selectedMessageIds.length === 0) return;
     showConfirm(
-      'حذف جماعي للرسائل',
-      `هل أنت متأكد من رغبتك في حذف ${selectedMessageIds.length} من الرسائل المحددة؟`,
+      'Delete Multiple Messages',
+      `Are you sure you want to delete ${selectedMessageIds.length} selected messages?`,
       async () => {
         try {
           const res = await fetch(`${API_BASE}/api/chat/delete-bulk`, {
@@ -959,13 +1162,13 @@ function App() {
             body: JSON.stringify({ messageIds: selectedMessageIds })
           });
           if (res.ok) {
-            showToast('تم حذف الرسائل المحددة');
+            showToast('Selected messages deleted');
             setIsMultiSelectMode(false);
             setSelectedMessageIds([]);
             fetchChatMessages();
           } else {
             const data = await res.json();
-            showToast(data.error || 'فشل حذف الرسائل');
+            showToast(data.error || 'Failed to delete messages');
           }
         } catch (err) {
           console.error(err);
@@ -1048,7 +1251,7 @@ function App() {
         setGamePlayError(data.error);
       }
     } catch (e) {
-      setGamePlayError('فشل حفظ نقاط اللعب.');
+      setGamePlayError('Failed to save game score.');
     }
   };
 
@@ -1062,25 +1265,77 @@ function App() {
     setWheelRotation(newRot);
     playChatSound('start');
 
+    // Run a high-precision animation frame loop to play tick clicks exactly as segment lines cross 12 o'clock
+    const startTime = performance.now();
+    const duration = 4000; // matching CSS transition duration
+    const startAngle = wheelRotation;
+    let lastSegmentIndex = Math.floor((startAngle - 15) / 30);
+    let lastTickTime = 0;
+
+    const animateTicks = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Quartic ease-out curve matches the cubic-bezier easing physics
+      const easeProgress = 1 - Math.pow(1 - progress, 4);
+      const currentAngle = startAngle + easeProgress * randomDegree;
+
+      // Play tick sound when boundary lines (30 degrees step with 15 degrees offset) cross 12 o'clock
+      const currentSegmentIndex = Math.floor((currentAngle - 15) / 30);
+      
+      if (currentSegmentIndex !== lastSegmentIndex) {
+        const timeNow = performance.now();
+        // Throttle to max 1 click every 40ms to avoid sound bugs/context overload at high speeds
+        if (timeNow - lastTickTime > 40) {
+          playChatSound('tick');
+          lastTickTime = timeNow;
+        }
+        lastSegmentIndex = currentSegmentIndex;
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(animateTicks);
+      }
+    };
+    // Start tracking ticks
+    requestAnimationFrame(animateTicks);
+
     setTimeout(() => {
       setIsSpinning(false);
-      const actualDeg = newRot % 360;
-      // 8 segments: 45 deg each
-      // Prizes: +20 XP, +50 XP, +10 XP, Try Again, +100 XP, +30 XP, +5 XP, Mystery
-      const segs = ['Mystery 🎁', '+5 XP ⚡', '+30 XP ⚡', '+100 XP ⚡', 'حاول مجدداً 🍀', '+10 XP ⚡', '+50 XP ⚡', '+20 XP ⚡'];
-      const prizeIdx = Math.floor(actualDeg / 45);
+      // Math formula for 12 segments centered under the 12 o'clock pointer (0° relative to drawing, not 270°)
+      const actualDeg = (360 - (newRot % 360)) % 360;
+      const segs = [
+        'Mystery Box 🎁', 
+        '+5 XP ⚡', 
+        '+30 XP ⚡', 
+        '+100 XP ⚡', 
+        'Try Again 🍀', 
+        '+15 XP ⚡', 
+        '+5 XP ⚡', 
+        '+50 XP ⚡', 
+        'Try Again 🍀', 
+        '+20 XP ⚡', 
+        '+10 XP ⚡', 
+        '+5 XP ⚡'
+      ];
+      // Use Math.round for closest segment center matching
+      const prizeIdx = Math.round(actualDeg / 30) % 12;
       const prize = segs[prizeIdx];
 
-      showToast(`عجلة الحظ: حصلت على ${prize}`);
+      showToast(`Spin Wheel: You won ${prize}`);
       if (prize.includes('XP') || prize.includes('Mystery')) {
         playChatSound('win');
-        let xpAmt = 20;
-        if (prize.includes('50')) xpAmt = 50;
-        if (prize.includes('100')) xpAmt = 100;
-        if (prize.includes('30')) xpAmt = 30;
-        if (prize.includes('5')) xpAmt = 5;
-        triggerXpPopup(xpAmt);
-        claimMockReward(xpAmt);
+        let xpAmt = 0;
+        const match = prize.match(/\+(\d+)\s*XP/);
+        if (match) {
+          xpAmt = parseInt(match[1], 10);
+        } else if (prize.includes('Mystery')) {
+          xpAmt = 40; // Mystery box default
+        }
+        if (xpAmt > 0) {
+          triggerXpPopup(xpAmt);
+          claimMockReward(xpAmt);
+        }
       } else {
         playChatSound('error');
       }
@@ -1101,24 +1356,24 @@ function App() {
 
   // Shop Purchases
   const handleShopPurchase = (itemId: string, cost: number) => {
-    if (!user) { showToast('سجل دخولك لتصفح المتجر 🔐'); return; }
+    if (!user) { showToast('Login to browse the shop 🔐'); return; }
     if (user.total_xp < cost) {
-      showToast('ليس لديك نقاط كافية للشراء! 😢');
+      showToast('You do not have enough XP to purchase! 😢');
       playChatSound('error');
       return;
     }
     if (unlockedCosmetics.includes(itemId)) {
-      showToast('أنت تملك هذا العنصر بالفعل!');
+      showToast('You already own this item!');
       return;
     }
     showConfirm(
-      'تأكيد الشراء',
-      `هل ترغب في شراء هذا العنصر مقابل ${cost} XP؟`,
+      'Confirm Purchase',
+      `Do you want to buy this item for ${cost} XP?`,
       () => {
         const nextUnlocked = [...unlockedCosmetics, itemId];
         setUnlockedCosmetics(nextUnlocked);
         localStorage.setItem('cosmetics', JSON.stringify(nextUnlocked));
-        showToast('تم الشراء بنجاح! 🎉 اذهب لملفك الشخصي لتفعيله.');
+        showToast('Purchase successful! 🎉 Go to your profile to equip it.');
         playChatSound('success');
       }
     );
@@ -1160,7 +1415,7 @@ function App() {
       if (adminEpisodeForm.code) {
         body.xp_code = { code: adminEpisodeForm.code, max_uses: adminEpisodeForm.code_max_uses, expiry_date: adminEpisodeForm.code_expiry || null };
       }
-      const res = await fetch(`${API_BASE}/api/episodes`, {
+      const res = await fetch(`${API_BASE}/api/admin/episode`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(body)
@@ -1172,7 +1427,7 @@ function App() {
         setAdminEpisodeForm({ title_ar: '', title_en: '', description: '', thumbnail_url: '', youtube_url: '', quiz_question: '', quiz_options: ['', '', '', ''], quiz_correct: 0, code: '', code_max_uses: 200, code_expiry: '' });
       }
     } catch (err) {
-      setAdminMessage('فشل الاتصال بالخادم.');
+      setAdminMessage('Connection to server failed.');
     } finally {
       setAdminSubmitting(false);
     }
@@ -1266,6 +1521,9 @@ function App() {
         handleToggleReaction={handleToggleReaction}
         handleDeleteMessage={handleDeleteMessage}
         handleBulkDeleteMessages={handleBulkDeleteMessages}
+        suggestions={suggestions}
+        handleCreateSuggestion={handleCreateSuggestion}
+        handleUpvoteSuggestion={handleUpvoteSuggestion}
       />
     );
   };
@@ -1412,6 +1670,14 @@ function App() {
         setAdminEpisodeForm={setAdminEpisodeForm}
         handleAdminCreateEpisode={handleAdminCreateEpisode}
         adminSubmitting={adminSubmitting}
+        adminUsers={adminUsers}
+        adminCodes={adminCodes}
+        adminSuggestions={adminSuggestions}
+        adminCodeForm={adminCodeForm}
+        setAdminCodeForm={setAdminCodeForm}
+        handleAdminCreateCode={handleAdminCreateCode}
+        handleAdminToggleUserRole={handleAdminToggleUserRole}
+        handleAdminUpdateSuggestionStatus={handleAdminUpdateSuggestionStatus}
       />
     );
   };

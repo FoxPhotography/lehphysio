@@ -18,8 +18,8 @@ export const Confirm: React.FC<ConfirmProps> = ({
   return (
     <div className="auth-panel animate-fade-in" style={{ maxWidth: '400px', margin: '4rem auto' }}>
       <div className="glass-card" style={{ padding: '2rem' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', marginBottom: '0.25rem' }}>تفعيل الحساب</h2>
-        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '2rem' }}>أدخل كود التفعيل المكون من 6 أرقام المرسل لبريدك الإلكتروني</p>
+        <h2 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', marginBottom: '0.25rem' }}>Verify Account</h2>
+        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '2rem' }}>Enter the 6-digit verification code sent to your email</p>
         {authError && <div className="pl-form-error">{authError}</div>}
         {authSuccess && <div className="pl-form-success">{authSuccess}</div>}
         <form onSubmit={handleConfirm}>
@@ -32,7 +32,7 @@ export const Confirm: React.FC<ConfirmProps> = ({
             style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px', fontWeight: 900, marginBottom: '1.5rem' }}
             required
           />
-          <button type="submit" className="btn-primary" style={{ width: '100%' }}>تفعيل الحساب</button>
+          <button type="submit" className="btn-primary" style={{ width: '100%' }}>Verify Account</button>
         </form>
       </div>
     </div>

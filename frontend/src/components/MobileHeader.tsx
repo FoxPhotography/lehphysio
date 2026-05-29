@@ -14,7 +14,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   return (
     <header className="app-mobile-header">
       <a href="#" className="mobile-logo" onClick={(e) => { e.preventDefault(); setCurrentPage('home'); }}>
-        ليه <span>فيزيو؟</span>
+        Why <span>Physio?</span>
       </a>
       
       <div className="mobile-header-actions">

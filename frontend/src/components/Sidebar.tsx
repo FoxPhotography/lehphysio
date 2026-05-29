@@ -22,24 +22,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className="app-sidebar">
       <a href="#" className="sidebar-logo" onClick={(e) => { e.preventDefault(); setCurrentPage('home'); }}>
-        <i className="ti ti-microphone"></i> ليه <span>فيزيو؟</span>
+        <i className="ti ti-microphone"></i> Why <span>Physio?</span>
       </a>
 
       <ul className="sidebar-nav">
         <li>
           <button className={`sidebar-link-btn ${currentPage === 'home' ? 'active' : ''}`} onClick={() => setCurrentPage('home')}>
-            <i className="ti ti-smart-home"></i> الرئيسية
+            <i className="ti ti-smart-home"></i> Home
           </button>
         </li>
         <li>
           <button className={`sidebar-link-btn ${currentPage === 'episodes' || currentPage === 'episode-detail' ? 'active' : ''}`} onClick={() => setCurrentPage('episodes')}>
-            <i className="ti ti-video"></i> الحلقات
+            <i className="ti ti-video"></i> Episodes
           </button>
         </li>
         <li>
           <button className={`sidebar-link-btn ${currentPage === 'community' ? 'active' : ''}`} onClick={() => { setCurrentPage('community'); setCommunityTab('chat'); }} style={{ position: 'relative', width: '100%', justifyContent: 'space-between', display: 'flex' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <i className="ti ti-messages"></i> الشات
+              <i className="ti ti-messages"></i> Chat
             </span>
             {unseenCount > 0 && (
               <span className="mobile-badge" style={{ position: 'static', marginRight: 'auto', display: 'inline-flex' }}>
@@ -50,23 +50,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </li>
         <li>
           <button className={`sidebar-link-btn ${currentPage === 'games' || currentPage === 'play-game' ? 'active' : ''}`} onClick={() => setCurrentPage('games')}>
-            <i className="ti ti-device-gamepad-2"></i> التحديات
+            <i className="ti ti-device-gamepad-2"></i> Games
           </button>
         </li>
         <li>
           <button className={`sidebar-link-btn ${currentPage === 'leaderboard' ? 'active' : ''}`} onClick={() => setCurrentPage('leaderboard')}>
-            <i className="ti ti-trophy"></i> المتصدرين
+            <i className="ti ti-trophy"></i> Leaderboard
           </button>
         </li>
         <li>
           <button className={`sidebar-link-btn ${currentPage === 'rewards' ? 'active' : ''}`} onClick={() => setCurrentPage('rewards')}>
-            <i className="ti ti-gift"></i> المكافآت
+            <i className="ti ti-gift"></i> Rewards
           </button>
         </li>
         {user && (
           <li>
             <button className={`sidebar-link-btn ${currentPage === 'profile' ? 'active' : ''}`} onClick={() => setCurrentPage('profile')}>
-              <i className="ti ti-user-circle"></i> الملف الشخصي
+              <i className="ti ti-user-circle"></i> Profile
             </button>
           </li>
         )}
@@ -90,8 +90,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <button className="btn-primary mini" onClick={() => setCurrentPage('login')}>تسجيل الدخول</button>
-            <button className="btn-outline mini" onClick={() => setCurrentPage('register')}>إنشاء حساب</button>
+            <button className="btn-primary mini" onClick={() => setCurrentPage('login')}>Login</button>
+            <button className="btn-outline mini" onClick={() => setCurrentPage('register')}>Register</button>
           </div>
         )}
       </div>

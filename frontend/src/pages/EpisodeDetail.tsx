@@ -50,7 +50,7 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
     return (
       <div style={{ textAlign: 'center', padding: '5rem 0' }}>
         <div className="skeleton-loader" style={{ width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto' }}></div>
-        <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>جاري تحميل تفاصيل الحلقة...</p>
+        <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>Loading episode details...</p>
       </div>
     );
   }
@@ -62,14 +62,14 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
   return (
     <div className="episode-detail-panel animate-fade-in">
       <button className="btn-outline mini" onClick={() => setCurrentPage('episodes')} style={{ marginBottom: '1.5rem' }}>
-        <i className="ti ti-arrow-right"></i> العودة لقائمة الحلقات
+        <i className="ti ti-arrow-right"></i> Back to Episodes List
       </button>
 
       <section className="cinematic-header">
         <div className="cinematic-banner-overlay"></div>
         <div className="cinematic-bg-img" style={{ backgroundImage: `url(${episode.thumbnail_url || 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=600&auto=format&fit=crop'})` }}></div>
         <div className="cinematic-content" style={{ width: '100%' }}>
-          <span className="cinematic-ep-num">حلقة {episode.id}</span>
+          <span className="cinematic-ep-num">Episode {episode.id}</span>
           <div className="cinematic-title-row">
             <div className="cinematic-info">
               <h1 className="cinematic-title-ar">{episode.title_ar}</h1>
@@ -94,14 +94,14 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
                 borderRadius: '12px'
               }}
             >
-              <i className="ti ti-heart"></i> <span>{likes_count} إعجاب</span>
+              <i className="ti ti-heart"></i> <span>{likes_count} Likes</span>
             </button>
             <button 
               className="btn-outline mini" 
               onClick={() => {
                 const refUrl = `${window.location.origin}${window.location.pathname}?ref=${encodeURIComponent(user ? user.username : '')}&episode=${episode.id}`;
                 navigator.clipboard.writeText(refUrl);
-                showToast('تم نسخ رابط المشاركة الخاص بك! شاركه لتكسب نقاط XP عند دخول الآخرين منه 🔗');
+                showToast('Your share link has been copied! Share it to earn XP when others join 🔗');
               }}
               style={{ 
                 background: 'rgba(255,255,255,0.04)', 
@@ -112,7 +112,7 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
                 borderRadius: '12px'
               }}
             >
-              <i className="ti ti-share"></i> <span>{shares_count} مشاركة</span>
+              <i className="ti ti-share"></i> <span>{shares_count} Shares</span>
             </button>
           </div>
         </div>
@@ -134,28 +134,28 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
       {/* Code redeem & quiz widgets */}
       <section className="episode-widgets-row">
         <div className="glass-card">
-          <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '0.5rem' }}>🔑 كود الحلقة السري</h3>
-          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '1rem' }}>دخل الكود السري المخفي بالدقيقة المحددة للحصول على نقاط الـ XP.</p>
+          <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '0.5rem' }}>🔑 Secret Episode Code</h3>
+          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Enter the secret code hidden in the specific minute to get XP.</p>
           {redeemError && <div className="pl-form-error">{redeemError}</div>}
           {redeemSuccess && <div className="pl-form-success">{redeemSuccess}</div>}
           <form onSubmit={handleRedeem} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <input
               type="text"
               className="pl-input"
-              placeholder="مثال: EP1_SECRET"
+              placeholder="e.g. EP1_SECRET"
               value={secretCode}
               onChange={(e) => setSecretCode(e.target.value)}
             />
-            <button type="submit" className="btn-primary mini" style={{ width: '100%' }}>تفعيل الكود</button>
+            <button type="submit" className="btn-primary mini" style={{ width: '100%' }}>Redeem Code</button>
           </form>
         </div>
 
         <div className="glass-card">
-          <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '0.5rem' }}>🧠 كويز الحلقة (+150 XP)</h3>
+          <h3 style={{ fontSize: '16px', fontWeight: 800, marginBottom: '0.5rem' }}>🧠 Episode Quiz (+150 XP)</h3>
           {has_solved_quiz || quizResult ? (
             <div style={{ textAlign: 'center', padding: '1rem' }}>
               <span style={{ fontSize: '32px' }}>✅</span>
-              <h4 style={{ color: 'var(--orange)', marginTop: '0.5rem' }}>تم حل الكويز بنجاح!</h4>
+              <h4 style={{ color: 'var(--orange)', marginTop: '0.5rem' }}>Quiz solved successfully!</h4>
             </div>
           ) : quiz ? (
             <div>
@@ -177,11 +177,11 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
                 onClick={() => handleQuizSubmit(quiz.id)}
                 disabled={quizAnswer === null}
               >
-                إرسال الإجابة
+                Submit Answer
               </button>
             </div>
           ) : (
-            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>لا يوجد كويز متاح لهذه الحلقة.</p>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No quiz available for this episode.</p>
           )}
         </div>
       </section>
@@ -190,7 +190,7 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
       <section className="comments-panel" style={{ marginTop: '2.5rem' }}>
         <h2 className="pl-section-h2">
           <span className="title-text">
-            <i className="ti ti-message-circle"></i> المناقشات والتعليقات ({comments.length})
+            <i className="ti ti-message-circle"></i> Discussions & Comments ({comments.length})
           </span>
         </h2>
         
@@ -199,7 +199,7 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
             <input
               type="text"
               className="pl-input"
-              placeholder={replyingToComment ? `الرد على @${replyingToComment.username}...` : "أضف تعليقك الطبي هنا..."}
+              placeholder={replyingToComment ? `Reply to @${replyingToComment.username}...` : "Add your medical comment here..."}
               value={commentInput}
               onChange={(e) => setCommentInput(e.target.value)}
               onKeyDown={(e) => {
@@ -210,20 +210,20 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
             />
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', justifyContent: 'flex-end' }}>
               {replyingToComment && (
-                <button className="btn-outline mini" onClick={() => setReplyingToComment(null)}>إلغاء</button>
+                <button className="btn-outline mini" onClick={() => setReplyingToComment(null)}>Cancel</button>
               )}
               <button 
                 className="btn-primary mini" 
                 onClick={() => handleEpisodeInteract('comment', commentInput, replyingToComment?.id)} 
                 disabled={!commentInput.trim()}
               >
-                {replyingToComment ? 'رد' : 'تعليق'}
+                {replyingToComment ? 'Reply' : 'Comment'}
               </button>
             </div>
           </div>
         ) : (
           <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '1.5rem' }}>
-            يرجى تسجيل الدخول للمشاركة في النقاشات.
+            Please login to participate in discussions.
           </p>
         )}
 
@@ -244,11 +244,11 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
                   onClick={() => handleEpisodeInteract('comment_like', undefined, c.id)}
                   style={{ fontSize: '11px' }}
                 >
-                  <i className="ti ti-heart"></i> {c.likes_count} إعجاب
+                  <i className="ti ti-heart"></i> {c.likes_count} Likes
                 </button>
                 {user && (
                   <button className="feed-action-btn" onClick={() => setReplyingToComment(c)} style={{ fontSize: '11px' }}>
-                    <i className="ti ti-arrow-back-up"></i> رد
+                    <i className="ti ti-arrow-back-up"></i> Reply
                   </button>
                 )}
               </div>

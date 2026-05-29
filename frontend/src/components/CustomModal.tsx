@@ -27,11 +27,11 @@ export const CustomModal: React.FC<CustomModalProps> = ({ modal }) => {
         </div>
         <div className="pl-modal-footer">
           <button className="btn-primary mini" onClick={modal.onConfirm}>
-            {modal.confirmText || 'موافق'}
+            {modal.confirmText || 'OK'}
           </button>
           {modal.onCancel && (
             <button className="btn-outline mini" onClick={modal.onCancel}>
-              {modal.cancelText || 'إلغاء'}
+              {modal.cancelText || 'Cancel'}
             </button>
           )}
         </div>
