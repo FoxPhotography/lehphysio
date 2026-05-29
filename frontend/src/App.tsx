@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { playChatSound, getNameColor, getYoutubeEmbedUrl } from './utils/helpers';
+import { playChatSound, getNameColor, getYoutubeEmbedUrl, getLocalDateString } from './utils/helpers';
 
 // Pages
 import { Home } from './pages/Home';
@@ -24,7 +24,10 @@ import { CustomModal } from './components/CustomModal';
 import { Toast } from './components/Toast';
 import { XPPopup } from './components/XPPopup';
 
-const API_BASE = 'http://localhost:5000';
+// Use same host if deployed/tunneled, otherwise assume local dev server is pointing to port 5000
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.') 
+  ? `http://${window.location.hostname}:5000` 
+  : '';
 
 function App() {
   // Navigation State
@@ -140,6 +143,11 @@ function App() {
   const [adminSuggestions, setAdminSuggestions] = useState<any[]>([]);
   const [suggestions, setSuggestions] = useState<any[]>([]);
 
+  // Moderation state
+  const [moderationUser, setModerationUser] = useState<{ username: string; id: number } | null>(null);
+  const [moderationAction, setModerationAction] = useState('mute');
+  const [moderationDuration, setModerationDuration] = useState('1d');
+
   // References
   const chatMessagesRef = useRef(chatMessages);
   const userRef = useRef(user);
@@ -194,17 +202,42 @@ function App() {
     }
   }, [token]);
 
-  // Initial Fetching & Referral Tracking
+  // Handle auto-joining pending game code from login/register
+  useEffect(() => {
+    if (token) {
+      const pendingCode = sessionStorage.getItem('pendingGameCode');
+      if (pendingCode) {
+        sessionStorage.removeItem('pendingGameCode');
+        handleJoinGameRoom(pendingCode);
+      }
+    }
+  }, [token]);
+
+  // Initial Fetching & Referral/Game Invite Tracking
   useEffect(() => {
     fetchEpisodes();
     fetchCommunityPosts();
     fetchLeaderboard();
     fetchPublicSuggestions();
 
-    // Check query parameters for referral
+    // Check query parameters for referral or game code
     const params = new URLSearchParams(window.location.search);
     const refUsername = params.get('ref');
     const refEpisodeId = params.get('episode');
+    const gameCode = params.get('gameCode');
+
+    if (gameCode) {
+      const activeToken = localStorage.getItem('token');
+      if (activeToken) {
+        handleJoinGameRoom(gameCode);
+      } else {
+        sessionStorage.setItem('pendingGameCode', gameCode);
+        setCurrentPage('login');
+        showToast('Please log in to join the game room! 🔐');
+      }
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
 
     if (refUsername && refEpisodeId) {
       const activeToken = localStorage.getItem('token');
@@ -712,6 +745,21 @@ function App() {
     }
   };
 
+  const handlePlayAgain = async () => {
+    if (!activeGameRoom || !token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/games/play-again`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ roomCode: activeGameRoom.code })
+      });
+      const data = await res.json();
+      if (res.ok) setActiveGameRoom(data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleLeaveGameRoom = async () => {
     if (!activeGameRoom || !token) return;
     try {
@@ -786,7 +834,9 @@ function App() {
         if (data.rewards && data.rewards.daily_login) {
           triggerXpPopup(10);
         }
-        setCurrentPage('home');
+        if (!sessionStorage.getItem('pendingGameCode')) {
+          setCurrentPage('home');
+        }
       } else {
         setAuthError(data.error);
       }
@@ -838,7 +888,9 @@ function App() {
         setUser(data.user);
         setConfirmCode('');
         setTimeout(() => {
-          setCurrentPage('home');
+          if (!sessionStorage.getItem('pendingGameCode')) {
+            setCurrentPage('home');
+          }
           setAuthSuccess('');
         }, 1500);
       } else {
@@ -1323,9 +1375,9 @@ function App() {
       const prize = segs[prizeIdx];
 
       showToast(`Spin Wheel: You won ${prize}`);
+      let xpAmt = 0;
       if (prize.includes('XP') || prize.includes('Mystery')) {
         playChatSound('win');
-        let xpAmt = 0;
         const match = prize.match(/\+(\d+)\s*XP/);
         if (match) {
           xpAmt = parseInt(match[1], 10);
@@ -1334,12 +1386,70 @@ function App() {
         }
         if (xpAmt > 0) {
           triggerXpPopup(xpAmt);
-          claimMockReward(xpAmt);
         }
       } else {
         playChatSound('error');
       }
+      // Update state locally immediately to prevent race conditions
+      const todayStr = getLocalDateString();
+      setUser((prev: any) => prev ? { ...prev, last_spin_wheel_date: todayStr } : null);
+      claimSpinWheelReward(xpAmt);
     }, 4000);
+  };
+
+  const handleClaimSurpriseBox = async () => {
+    if (!token) return;
+    const todayStr = getLocalDateString();
+    setUser((prev: any) => prev ? { ...prev, last_surprise_box_date: todayStr } : null);
+    try {
+      const res = await fetch(`${API_BASE}/api/rewards/surprise-box`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ clientDate: todayStr })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message || 'Opened daily surprise box! You earned +50 XP ⚡');
+        triggerXpPopup(data.xp_earned || 50);
+        playChatSound('win');
+        fetchUserProfile();
+      } else {
+        setUser((prev: any) => prev ? { ...prev, last_surprise_box_date: null } : null);
+        showToast(data.error || 'Failed to claim daily surprise box.');
+        playChatSound('error');
+      }
+    } catch (err) {
+      setUser((prev: any) => prev ? { ...prev, last_surprise_box_date: null } : null);
+      showToast('Connection error.');
+    }
+  };
+
+  const claimSpinWheelReward = async (amount: number) => {
+    if (!token) return;
+    const todayStr = getLocalDateString();
+    try {
+      const res = await fetch(`${API_BASE}/api/rewards/spin-wheel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ xpAmount: amount, clientDate: todayStr })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        fetchUserProfile();
+      } else {
+        setUser((prev: any) => prev ? { ...prev, last_spin_wheel_date: null } : null);
+        showToast(data.error || 'Failed to claim spin wheel reward.');
+      }
+    } catch (err) {
+      setUser((prev: any) => prev ? { ...prev, last_spin_wheel_date: null } : null);
+      showToast('Connection error.');
+    }
   };
 
   const claimMockReward = async (amount: number) => {
@@ -1352,6 +1462,165 @@ function App() {
       });
       fetchUserProfile();
     } catch (e) {}
+  };
+
+  const handleAdminDeleteCode = (codeId: number, codeName: string) => {
+    showConfirm(
+      'Delete XP Code',
+      `Are you sure you want to delete the XP Code "${codeName}"? This action cannot be undone.`,
+      async () => {
+        if (!token) return;
+        try {
+          const res = await fetch(`${API_BASE}/api/admin/xp-codes/${codeId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showToast(data.message || 'XP Code deleted successfully.');
+            fetchAdminCodes();
+          } else {
+            showToast(data.error || 'Failed to delete XP Code.');
+          }
+        } catch (err) {
+          showToast('Connection error.');
+        }
+      },
+      undefined,
+      'Delete',
+      'Cancel',
+      'danger'
+    );
+  };
+
+  const handleOpenModerationModal = (username: string, userId: number) => {
+    setModerationUser({ username, id: userId });
+    setModerationAction('mute');
+    setModerationDuration('1d');
+  };
+
+  const handleAdminModerateUser = async () => {
+    if (!token || !moderationUser) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/users/${moderationUser.id}/moderate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: moderationAction,
+          duration: moderationDuration
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message || `Successfully moderated @${moderationUser.username}`);
+        setModerationUser(null);
+        if (currentPage === 'admin') {
+          fetchAdminUsers();
+        }
+      } else {
+        showToast(data.error || 'Failed to apply moderation action.');
+      }
+    } catch (err) {
+      showToast('Connection failed.');
+    }
+  };
+
+  const renderModerationModal = () => {
+    if (!moderationUser) return null;
+    return (
+      <div 
+        className="pl-context-overlay" 
+        style={{ 
+          zIndex: 11000, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center' 
+        }} 
+        onClick={() => setModerationUser(null)}
+      >
+        <div 
+          className="glass-card" 
+          onClick={(e) => e.stopPropagation()} 
+          style={{ 
+            width: '90%', 
+            maxWidth: '400px', 
+            background: 'rgba(15, 15, 15, 0.95)', 
+            border: '1px solid var(--orange)', 
+            boxShadow: 'var(--shadow-orange-intense)',
+            padding: '2rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
+            direction: 'ltr',
+            textAlign: 'left'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 900, color: 'var(--orange)' }}>
+              🛡️ Moderation: @{moderationUser.username}
+            </h3>
+            <button 
+              onClick={() => setModerationUser(null)}
+              style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '18px' }}
+            >
+              <i className="ti ti-x"></i>
+            </button>
+          </div>
+
+          <div className="pl-form-group">
+            <label style={{ fontSize: '12px', fontWeight: 800, marginBottom: '6px', display: 'block' }}>Select Action</label>
+            <select 
+              className="pl-input"
+              value={moderationAction}
+              onChange={(e) => setModerationAction(e.target.value)}
+            >
+              <option value="mute">Mute User (Chat & Comments)</option>
+              <option value="unmute">Unmute User</option>
+              <option value="ban">Ban User (Login Restriction)</option>
+              <option value="unban">Unban User</option>
+            </select>
+          </div>
+
+          {(moderationAction === 'mute' || moderationAction === 'ban') && (
+            <div className="pl-form-group">
+              <label style={{ fontSize: '12px', fontWeight: 800, marginBottom: '6px', display: 'block' }}>Duration</label>
+              <select 
+                className="pl-input"
+                value={moderationDuration}
+                onChange={(e) => setModerationDuration(e.target.value)}
+              >
+                <option value="1h">1 Hour</option>
+                <option value="1d">1 Day</option>
+                <option value="1w">1 Week</option>
+                <option value="permanent">Permanent</option>
+              </select>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <button 
+              className="btn-primary" 
+              style={{ flex: 1 }} 
+              onClick={handleAdminModerateUser}
+            >
+              Apply Action
+            </button>
+            <button 
+              className="btn-outline" 
+              style={{ flex: 1 }} 
+              onClick={() => setModerationUser(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Shop Purchases
@@ -1488,6 +1757,7 @@ function App() {
         replyingToComment={replyingToComment}
         setReplyingToComment={setReplyingToComment}
         showToast={showToast}
+        handleOpenModerationModal={handleOpenModerationModal}
       />
     );
   };
@@ -1524,11 +1794,14 @@ function App() {
         suggestions={suggestions}
         handleCreateSuggestion={handleCreateSuggestion}
         handleUpvoteSuggestion={handleUpvoteSuggestion}
+        handleOpenModerationModal={handleOpenModerationModal}
       />
     );
   };
 
   const renderGamesPage = () => {
+    const todayStr = getLocalDateString();
+    const hasSpunToday = !!(user && user.last_spin_wheel_date === todayStr);
     return (
       <Games
         user={user}
@@ -1558,6 +1831,7 @@ function App() {
         setGameRoomCodeInput={setGameRoomCodeInput}
         handleJoinGameRoom={handleJoinGameRoom}
         isGameLoading={isGameLoading}
+        hasSpunToday={hasSpunToday}
       />
     );
   };
@@ -1573,6 +1847,7 @@ function App() {
         submittedGameAnswer={submittedGameAnswer}
         setSubmittedGameAnswer={setSubmittedGameAnswer}
         handleNextRound={handleNextRound}
+        handlePlayAgain={handlePlayAgain}
         showToast={showToast}
         token={token}
       />
@@ -1606,6 +1881,8 @@ function App() {
   };
 
   const renderRewardsPage = () => {
+    const todayStr = getLocalDateString();
+    const hasOpenedBoxToday = !!(user && user.last_surprise_box_date === todayStr);
     return (
       <Rewards
         user={user}
@@ -1619,6 +1896,8 @@ function App() {
         claimMockReward={claimMockReward}
         unlockedCosmetics={unlockedCosmetics}
         handleShopPurchase={handleShopPurchase}
+        hasOpenedBoxToday={hasOpenedBoxToday}
+        handleClaimSurpriseBox={handleClaimSurpriseBox}
       />
     );
   };
@@ -1678,6 +1957,8 @@ function App() {
         handleAdminCreateCode={handleAdminCreateCode}
         handleAdminToggleUserRole={handleAdminToggleUserRole}
         handleAdminUpdateSuggestionStatus={handleAdminUpdateSuggestionStatus}
+        handleAdminDeleteCode={handleAdminDeleteCode}
+        handleOpenModerationModal={handleOpenModerationModal}
       />
     );
   };
@@ -1748,6 +2029,9 @@ function App() {
 
       {/* Global alert/confirm overlay */}
       <CustomModal modal={customModal} />
+
+      {/* Moderation Overlay Dialog */}
+      {renderModerationModal()}
 
       {/* Toast Notification element */}
       <Toast message={toastMessage} />

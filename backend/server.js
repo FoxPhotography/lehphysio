@@ -9,6 +9,54 @@ const { sendVerificationCode } = require('./emailService');
 
 const activeUsers = new Map(); // username -> timestamp
 
+function getLocalDateString() {
+  const d = new Date();
+  const offset = d.getTimezoneOffset();
+  const localDate = new Date(d.getTime() - (offset * 60000));
+  return localDate.toISOString().split('T')[0];
+}
+
+function getExpirationDate(duration) {
+  if (duration === 'permanent' || !duration) return null;
+  const match = duration.match(/^(\d+)(h|d|w)$/);
+  if (!match) return null;
+  const val = parseInt(match[1], 10);
+  const unit = match[2];
+  const msMap = { h: 3600000, d: 86400000, w: 604800000 };
+  return new Date(Date.now() + val * msMap[unit]).toISOString();
+}
+
+async function checkModerationStatus(userId) {
+  try {
+    const user = await db.get('SELECT is_muted, mute_expires_at, is_banned, ban_expires_at FROM users WHERE id = ?', [userId]);
+    if (!user) return { banned: false, muted: false };
+    
+    const now = new Date();
+    
+    let banned = !!user.is_banned;
+    if (banned && user.ban_expires_at) {
+      if (new Date(user.ban_expires_at) < now) {
+        await db.run('UPDATE users SET is_banned = 0, ban_expires_at = NULL WHERE id = ?', [userId]);
+        banned = false;
+      }
+    }
+    
+    let muted = !!user.is_muted;
+    if (muted && user.mute_expires_at) {
+      if (new Date(user.mute_expires_at) < now) {
+        await db.run('UPDATE users SET is_muted = 0, mute_expires_at = NULL WHERE id = ?', [userId]);
+        muted = false;
+      }
+    }
+    
+    return { banned, muted, ban_expires_at: user.ban_expires_at, mute_expires_at: user.mute_expires_at };
+  } catch (err) {
+    console.error('Error in checkModerationStatus:', err);
+    return { banned: false, muted: false };
+  }
+}
+
+
 
 // Admin Authentication Middleware (Loads role dynamically from database)
 const adminMiddleware = [authMiddleware, async (req, res, next) => {
@@ -29,6 +77,10 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static frontend in production
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Dynamic Rank Calculator Helper
 function getRank(xp) {
@@ -331,7 +383,13 @@ app.post('/api/auth/verify', async (req, res) => {
         weekly_xp: user.weekly_xp,
         streak_count: user.streak_count,
         role: user.role || 'user',
-        rank: getRank(user.total_xp)
+        rank: getRank(user.total_xp),
+        last_surprise_box_date: user.last_surprise_box_date,
+        last_spin_wheel_date: user.last_spin_wheel_date,
+        is_muted: user.is_muted || 0,
+        mute_expires_at: user.mute_expires_at,
+        is_banned: user.is_banned || 0,
+        ban_expires_at: user.ban_expires_at
       }
     });
   } catch (err) {
@@ -356,6 +414,13 @@ app.post('/api/auth/login', async (req, res) => {
 
     if (user.is_verified === 0) {
       return res.status(400).json({ error: 'Please activate your account first using the code sent to your email.' });
+    }
+
+    // Check ban
+    const mod = await checkModerationStatus(user.id);
+    if (mod.banned) {
+      const expiryText = mod.ban_expires_at ? `until ${new Date(mod.ban_expires_at).toLocaleString()}` : 'permanently';
+      return res.status(403).json({ error: `Your account is banned ${expiryText}.` });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
@@ -414,7 +479,13 @@ app.post('/api/auth/login', async (req, res) => {
         weekly_xp: updatedWeeklyXp,
         streak_count: updatedStreak,
         role: user.role || 'user',
-        rank: getRank(updatedTotalXp)
+        rank: getRank(updatedTotalXp),
+        last_surprise_box_date: user.last_surprise_box_date,
+        last_spin_wheel_date: user.last_spin_wheel_date,
+        is_muted: mod.muted ? 1 : 0,
+        mute_expires_at: mod.mute_expires_at,
+        is_banned: mod.banned ? 1 : 0,
+        ban_expires_at: mod.ban_expires_at
       },
       rewards: {
         daily_login: dailyLoginAwarded,
@@ -430,7 +501,13 @@ app.post('/api/auth/login', async (req, res) => {
 // 4. Auth: Get Current Profile
 app.get('/api/auth/me', authMiddleware, async (req, res) => {
   try {
-    const user = await db.get('SELECT id, username, email, batch, total_xp, weekly_xp, streak_count, last_login_date, role FROM users WHERE id = ?', [req.user.id]);
+    const mod = await checkModerationStatus(req.user.id);
+    if (mod.banned) {
+      const expiryText = mod.ban_expires_at ? `until ${new Date(mod.ban_expires_at).toLocaleString()}` : 'permanently';
+      return res.status(403).json({ error: `Your account is banned ${expiryText}.` });
+    }
+
+    const user = await db.get('SELECT id, username, email, batch, total_xp, weekly_xp, streak_count, last_login_date, role, last_surprise_box_date, last_spin_wheel_date, is_muted, mute_expires_at, is_banned, ban_expires_at FROM users WHERE id = ?', [req.user.id]);
     if (!user) {
       return res.status(404).json({ error: 'User not found.' });
     }
@@ -438,6 +515,10 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
     res.json({
       user: {
         ...user,
+        is_muted: mod.muted ? 1 : 0,
+        mute_expires_at: mod.mute_expires_at,
+        is_banned: mod.banned ? 1 : 0,
+        ban_expires_at: mod.ban_expires_at,
         role: user.role || 'user',
         rank: getRank(user.total_xp)
       }
@@ -520,6 +601,7 @@ app.get('/api/episodes/:id', async (req, res) => {
         const replyLikes = interactions.filter(i => i.type === 'comment_like' && i.parent_id === r.id);
         return {
           id: r.id,
+          user_id: r.user_id,
           username: r.username,
           content: r.content,
           created_at: r.created_at,
@@ -534,6 +616,7 @@ app.get('/api/episodes/:id', async (req, res) => {
 
       return {
         id: c.id,
+        user_id: c.user_id,
         username: c.username,
         content: c.content,
         created_at: c.created_at,
@@ -754,7 +837,7 @@ app.get('/api/chat', async (req, res) => {
     res.setHeader('X-Online-Count', onlineCount.toString());
 
     const messages = await db.all(
-      `SELECT m.id, m.message, m.created_at, m.reply_to_id, m.is_edited,
+      `SELECT m.id, m.message, m.created_at, m.reply_to_id, m.is_edited, m.user_id,
               u.username, u.batch, u.total_xp,
               rm.message as reply_message, ru.username as reply_username
        FROM chat_messages m 
@@ -812,6 +895,7 @@ app.get('/api/chat', async (req, res) => {
 
       return {
         id: m.id,
+        user_id: m.user_id,
         message: m.message,
         created_at: m.created_at,
         username: m.username,
@@ -842,6 +926,14 @@ app.post('/api/chat', authMiddleware, async (req, res) => {
   }
 
   try {
+    const mod = await checkModerationStatus(req.user.id);
+    if (mod.banned) {
+      return res.status(403).json({ error: 'Your account is banned. You cannot send chat messages.' });
+    }
+    if (mod.muted) {
+      const expiryText = mod.mute_expires_at ? `until ${new Date(mod.mute_expires_at).toLocaleString()}` : 'permanently';
+      return res.status(403).json({ error: `You are muted ${expiryText} and cannot send messages.` });
+    }
     const result = await db.run(
       `INSERT INTO chat_messages (user_id, message, reply_to_id, created_at) VALUES (?, ?, ?, ?)`,
       [req.user.id, message.trim(), reply_to_id || null, new Date().toISOString()]
@@ -1143,6 +1235,15 @@ app.post('/api/episodes/:id/interact', authMiddleware, async (req, res) => {
   const XP_MAP = { like: 5, comment: 15, share: 25, comment_like: 0 };
 
   try {
+    const mod = await checkModerationStatus(req.user.id);
+    if (mod.banned) {
+      return res.status(403).json({ error: 'Your account is banned. You cannot interact.' });
+    }
+    if ((type === 'comment' || type === 'comment_like') && mod.muted) {
+      const expiryText = mod.mute_expires_at ? `until ${new Date(mod.mute_expires_at).toLocaleString()}` : 'permanently';
+      return res.status(403).json({ error: `You are muted ${expiryText} and cannot comment/reply.` });
+    }
+
     const episode = await db.get('SELECT id FROM episodes WHERE id = ?', [episodeId]);
     if (!episode) return res.status(404).json({ error: 'Episode not found.' });
 
@@ -1509,7 +1610,7 @@ app.get('/api/admin/xp-codes', adminMiddleware, async (req, res) => {
 app.get('/api/admin/users', adminMiddleware, async (req, res) => {
   try {
     const users = await db.all(
-      'SELECT id, username, email, batch, total_xp, weekly_xp, streak_count, is_verified, role, created_at FROM users ORDER BY total_xp DESC'
+      'SELECT id, username, email, batch, total_xp, weekly_xp, streak_count, is_verified, role, created_at, is_muted, mute_expires_at, is_banned, ban_expires_at FROM users ORDER BY total_xp DESC'
     );
     res.json(users);
   } catch (err) {
@@ -1585,6 +1686,151 @@ app.post('/api/admin/games', adminMiddleware, async (req, res) => {
     res.status(201).json({ id: result.id, message: 'Game created successfully.' });
   } catch (err) {
     res.status(500).json({ error: 'An error occurred.' });
+  }
+});
+
+// Claim Daily Surprise Box
+app.post('/api/rewards/surprise-box', authMiddleware, async (req, res) => {
+  try {
+    const todayStr = req.body.clientDate || getLocalDateString();
+    const user = await db.get('SELECT total_xp, weekly_xp, last_surprise_box_date FROM users WHERE id = ?', [req.user.id]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    
+    if (user.last_surprise_box_date === todayStr) {
+      return res.status(400).json({ error: 'You have already opened your surprise box today. Resets at midnight 12:00 AM.' });
+    }
+    
+    const xpReward = 50;
+    const newTotalXp = user.total_xp + xpReward;
+    const newWeeklyXp = user.weekly_xp + xpReward;
+    
+    await db.run(
+      'UPDATE users SET total_xp = ?, weekly_xp = ?, last_surprise_box_date = ? WHERE id = ?',
+      [newTotalXp, newWeeklyXp, todayStr, req.user.id]
+    );
+    
+    res.json({
+      success: true,
+      message: 'Opened daily surprise box! You earned +50 XP ⚡',
+      xp_earned: xpReward,
+      total_xp: newTotalXp,
+      weekly_xp: newWeeklyXp,
+      rank: getRank(newTotalXp)
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to claim surprise box.' });
+  }
+});
+
+// Claim Daily Spin Wheel
+app.post('/api/rewards/spin-wheel', authMiddleware, async (req, res) => {
+  const { xpAmount, clientDate } = req.body;
+  const xpReward = parseInt(xpAmount, 10) || 0;
+  
+  try {
+    const todayStr = clientDate || getLocalDateString();
+    const user = await db.get('SELECT total_xp, weekly_xp, last_spin_wheel_date FROM users WHERE id = ?', [req.user.id]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    
+    if (user.last_spin_wheel_date === todayStr) {
+      return res.status(400).json({ error: 'You have already spun the wheel today. Resets at midnight 12:00 AM.' });
+    }
+    
+    const newTotalXp = user.total_xp + xpReward;
+    const newWeeklyXp = user.weekly_xp + xpReward;
+    
+    await db.run(
+      'UPDATE users SET total_xp = ?, weekly_xp = ?, last_spin_wheel_date = ? WHERE id = ?',
+      [newTotalXp, newWeeklyXp, todayStr, req.user.id]
+    );
+    
+    res.json({
+      success: true,
+      message: `Spin Wheel claimed successfully! You earned +${xpReward} XP ⚡`,
+      xp_earned: xpReward,
+      total_xp: newTotalXp,
+      weekly_xp: newWeeklyXp,
+      rank: getRank(newTotalXp)
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to claim spin wheel.' });
+  }
+});
+
+// Admin: Mute, unmute, ban, or unban user
+app.post('/api/admin/users/:id/moderate', adminMiddleware, async (req, res) => {
+  const userId = req.params.id;
+  const { action, duration } = req.body; // action: 'mute'|'unmute'|'ban'|'unban', duration: '1h'|'1d'|'1w'|'permanent'
+  
+  if (!action || !['mute', 'unmute', 'ban', 'unban'].includes(action)) {
+    return res.status(400).json({ error: 'Invalid action.' });
+  }
+  
+  try {
+    if (parseInt(userId) === req.user.id) {
+      return res.status(400).json({ error: 'You cannot moderate yourself.' });
+    }
+    
+    const targetUser = await db.get('SELECT username FROM users WHERE id = ?', [userId]);
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    
+    const expiresAt = (action === 'mute' || action === 'ban') ? getExpirationDate(duration) : null;
+    
+    if (action === 'mute') {
+      await db.run(
+        'UPDATE users SET is_muted = 1, mute_expires_at = ? WHERE id = ?',
+        [expiresAt, userId]
+      );
+      res.json({ success: true, message: `Muted ${targetUser.username} (${duration || 'permanent'}).` });
+    } else if (action === 'unmute') {
+      await db.run(
+        'UPDATE users SET is_muted = 0, mute_expires_at = NULL WHERE id = ?',
+        [userId]
+      );
+      res.json({ success: true, message: `Unmuted ${targetUser.username}.` });
+    } else if (action === 'ban') {
+      await db.run(
+        'UPDATE users SET is_banned = 1, ban_expires_at = ? WHERE id = ?',
+        [expiresAt, userId]
+      );
+      res.json({ success: true, message: `Banned ${targetUser.username} (${duration || 'permanent'}).` });
+    } else if (action === 'unban') {
+      await db.run(
+        'UPDATE users SET is_banned = 0, ban_expires_at = NULL WHERE id = ?',
+        [userId]
+      );
+      res.json({ success: true, message: `Unbanned ${targetUser.username}.` });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred during moderation.' });
+  }
+});
+
+// Admin: Delete XP code
+app.delete('/api/admin/xp-codes/:id', adminMiddleware, async (req, res) => {
+  const codeId = req.params.id;
+  try {
+    const existing = await db.get('SELECT * FROM xp_codes WHERE id = ?', [codeId]);
+    if (!existing) {
+      return res.status(404).json({ error: 'XP Code not found.' });
+    }
+    
+    await db.run('DELETE FROM xp_codes WHERE id = ?', [codeId]);
+    await db.run('DELETE FROM code_redemptions WHERE code_id = ?', [codeId]);
+    
+    res.json({ success: true, message: `XP Code "${existing.code}" deleted successfully.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete XP code.' });
   }
 });
 
@@ -1760,6 +2006,358 @@ const ANATOMY_QUESTIONS = [
       'Supplied by the inferior gluteal nerve.'
     ],
     answers: ['gluteus maximus', 'gluteus', 'glutes']
+  },
+  {
+    structure: 'Pectoralis Major',
+    type: 'muscle',
+    hints: [
+      'A thick, fan-shaped muscle located at the front of the human chest.',
+      'Makes up the bulk of the male chest muscles and lies under the breast in females.',
+      'Responsible for adduction, internal rotation, and flexion of the humerus bone.',
+      'Commonly known as the "pecs" muscle.'
+    ],
+    answers: ['pectoralis major', 'pectoralis', 'pecs', 'chest muscle']
+  },
+  {
+    structure: 'Humerus',
+    type: 'bone',
+    hints: [
+      'The long bone in the arm of the upper limb.',
+      'Runs from the shoulder to the elbow joint.',
+      'Articulates superiorly with the scapula and inferiorly with the radius and ulna.',
+      'Features the anatomical neck, surgical neck, and greater tubercle.'
+    ],
+    answers: ['humerus', 'upper arm bone', 'humerus bone']
+  },
+  {
+    structure: 'Tibialis Anterior',
+    type: 'muscle',
+    hints: [
+      'A muscle situated on the lateral side of the tibia bone in the lower limb.',
+      'It is the primary dorsiflexor of the foot at the ankle joint.',
+      'Also performs inversion of the foot.',
+      'Its weakness leads to a condition called foot drop.'
+    ],
+    answers: ['tibialis anterior', 'tibialis']
+  },
+  {
+    structure: 'Phrenic Nerve',
+    type: 'nerve',
+    hints: [
+      'A major nerve that originates in the neck (C3-C5 spinal levels).',
+      'Passes down between the lung and heart to reach the respiratory diaphragm.',
+      'It is the sole motor supply to the diaphragm muscle.',
+      'Critical for breathing; its irritation can cause hiccups.'
+    ],
+    answers: ['phrenic nerve', 'phrenic']
+  },
+  {
+    structure: 'Tibia',
+    type: 'bone',
+    hints: [
+      'The larger, stronger, and more anterior of the two bones in the leg below the knee.',
+      'Articulates with the femur superiorly and the talus bone inferiorly.',
+      'Commonly called the shinbone.',
+      'Contains the medial malleolus at its distal end.'
+    ],
+    answers: ['tibia', 'shinbone', 'shin bone']
+  },
+  {
+    structure: 'Latissimus Dorsi',
+    type: 'muscle',
+    hints: [
+      'A broad, flat muscle on the lumbar and thoracic regions of the back.',
+      'Commonly known as the "lats" and is the largest muscle in the upper body.',
+      'Responsible for extension, adduction, and internal rotation of the shoulder joint.',
+      'Often called the "swimmer\'s muscle" because of its role in pulling the arm down.'
+    ],
+    answers: ['latissimus dorsi', 'lats', 'latissimus']
+  },
+  {
+    structure: 'Sartorius',
+    type: 'muscle',
+    hints: [
+      'The longest muscle in the entire human body.',
+      'A long, thin, band-like muscle that runs obliquely down the anterior thigh.',
+      'Performs flexion, abduction, and lateral rotation of the hip, and flexion of the knee.',
+      'Often referred to as the tailor\'s muscle.'
+    ],
+    answers: ['sartorius', 'sartorius muscle']
+  },
+  {
+    structure: 'Fibula',
+    type: 'bone',
+    hints: [
+      'A slender bone located on the lateral side of the leg in the lower limb.',
+      'It runs parallel to the shinbone but is much thinner and does not bear weight.',
+      'Forms the lateral malleolus at the ankle joint.',
+      'Commonly called the calf bone.'
+    ],
+    answers: ['fibula', 'calf bone', 'fibula bone']
+  },
+  {
+    structure: 'Femoral Nerve',
+    type: 'nerve',
+    hints: [
+      'The largest branch of the lumbar plexus (L2-L4).',
+      'Supplies the muscles of the anterior thigh, including the quadriceps.',
+      'Provides sensation to the anterior thigh and medial leg.',
+      'Injury leads to loss of knee extension.'
+    ],
+    answers: ['femoral nerve', 'femoral']
+  },
+  {
+    structure: 'Achilles Tendon',
+    type: 'tendon',
+    hints: [
+      'A thick fibrous band of tissue at the back of the lower leg.',
+      'Connects the calf muscles (gastrocnemius and soleus) to the heel bone (calcaneus).',
+      'It is the thickest and strongest tendon in the human body.',
+      'Also known as the calcaneal tendon.'
+    ],
+    answers: ['achilles tendon', 'achilles', 'calcaneal tendon']
+  },
+  {
+    structure: 'Iliopsoas',
+    type: 'muscle',
+    hints: [
+      'The strongest and primary flexor of the hip joint.',
+      'Composed of the psoas major and iliacus muscles joining together.',
+      'Originates from the lumbar vertebrae and iliac fossa, inserting into the lesser trochanter.',
+      'Crucial for standing, walking, and running.'
+    ],
+    answers: ['iliopsoas', 'iliopsoas muscle']
+  },
+  {
+    structure: 'Calcaneus',
+    type: 'bone',
+    hints: [
+      'A large tarsal bone located in the posterior foot.',
+      'It is the largest bone of the foot and forms the foundation of the heel.',
+      'Articulates with the talus and cuboid bones.',
+      'Serves as the attachment point for the Achilles tendon.'
+    ],
+    answers: ['calcaneus', 'heel bone', 'heel']
+  },
+  {
+    structure: 'Sternocleidomastoid',
+    type: 'muscle',
+    hints: [
+      'A prominent superficial muscle in the neck.',
+      'Has two heads originating from the sternum and clavicle, inserting into the mastoid process.',
+      'Flexes the neck and rotates the head to the opposite side.',
+      'Supplied by the accessory nerve.'
+    ],
+    answers: ['sternocleidomastoid', 'scm', 'scm muscle']
+  },
+  {
+    structure: 'Sternum',
+    type: 'bone',
+    hints: [
+      'A flat bone located in the middle of the anterior chest wall.',
+      'Consists of three parts: manubrium, body, and xiphoid process.',
+      'Connects to the rib cartilages, forming the front of the rib cage.',
+      'Commonly known as the breastbone.'
+    ],
+    answers: ['sternum', 'breastbone', 'breast bone']
+  },
+  {
+    structure: 'Musculocutaneous Nerve',
+    type: 'nerve',
+    hints: [
+      'A major branch of the lateral cord of the brachial plexus.',
+      'Pierces the coracobrachialis muscle to run in the arm.',
+      'Supplies the elbow flexor muscles (biceps brachii and brachialis).',
+      'Provides sensation to the lateral forearm.'
+    ],
+    answers: ['musculocutaneous nerve', 'musculocutaneous']
+  },
+  {
+    structure: 'Rectus Abdominis',
+    type: 'muscle',
+    hints: [
+      'A paired muscle running vertically on each side of the anterior wall of the abdomen.',
+      'Separated by a midline band of connective tissue called the linea alba.',
+      'Responsible for flexing the lumbar spine (crunching).',
+      'Commonly referred to as the "abs" or "six-pack".'
+    ],
+    answers: ['rectus abdominis', 'abs', 'rectus', 'abdominal muscle']
+  },
+  {
+    structure: 'Radius',
+    type: 'bone',
+    hints: [
+      'One of the two long bones of the forearm in the upper limb.',
+      'Located on the lateral (thumb) side of the forearm.',
+      'Articulates with the humerus at the elbow and the scaphoid/lunate bones at the wrist.',
+      'Rotates around the ulna to perform pronation and supination.'
+    ],
+    answers: ['radius', 'radius bone']
+  },
+  {
+    structure: 'Axillary Nerve',
+    type: 'nerve',
+    hints: [
+      'A nerve originating from the posterior cord of the brachial plexus (C5-C6).',
+      'Passes through the quadrangular space of the shoulder.',
+      'Supplies the deltoid and teres minor muscles.',
+      'Often damaged in shoulder dislocations or surgical neck fractures.'
+    ],
+    answers: ['axillary nerve', 'axillary']
+  },
+  {
+    structure: 'Soleus',
+    type: 'muscle',
+    hints: [
+      'A broad, flat muscle located beneath the gastrocnemius in the posterior calf.',
+      'Performs plantar flexion of the ankle joint only (does not cross the knee).',
+      'Crucial for maintaining standing posture by preventing the body from falling forward.',
+      'Formed mostly of slow-twitch fibers for endurance.'
+    ],
+    answers: ['soleus', 'soleus muscle']
+  },
+  {
+    structure: 'Ulna',
+    type: 'bone',
+    hints: [
+      'One of the two long bones of the forearm in the upper limb.',
+      'Located on the medial (pinky) side of the forearm.',
+      'Contains the olecranon process which forms the bony tip of the elbow.',
+      'Runs parallel to the radius and acts as the stabilizing bone of the forearm.'
+    ],
+    answers: ['ulna', 'ulna bone']
+  },
+  {
+    structure: 'Peroneus Longus',
+    type: 'muscle',
+    hints: [
+      'A superficial muscle in the lateral compartment of the leg.',
+      'Also known as the fibularis longus.',
+      'Performs plantar flexion and eversion of the foot at the ankle joint.',
+      'Helps support the lateral and transverse arches of the foot.'
+    ],
+    answers: ['peroneus longus', 'fibularis longus', 'peroneus', 'fibularis']
+  },
+  {
+    structure: 'Pelvis',
+    type: 'bone',
+    hints: [
+      'A basin-shaped complex of bones connecting the trunk to the lower limbs.',
+      'Composed of the sacrum, coccyx, and hip bones (ilium, ischium, pubis).',
+      'Protects pelvic organs and supports the weight of the upper body.',
+      'Contains the acetabulum cup for articulating with the femur head.'
+    ],
+    answers: ['pelvis', 'pelvic bone', 'hip bone']
+  },
+  {
+    structure: 'Infraspinatus',
+    type: 'muscle',
+    hints: [
+      'A thick triangular muscle occupying the infraspinous fossa of the scapula.',
+      'One of the four rotator cuff muscles of the shoulder.',
+      'Its primary action is external (lateral) rotation of the shoulder joint.',
+      'Supplied by the suprascapular nerve.'
+    ],
+    answers: ['infraspinatus', 'infraspinatus muscle']
+  },
+  {
+    structure: 'Supraspinatus',
+    type: 'muscle',
+    hints: [
+      'A small muscle in the upper back that runs from the supraspinous fossa to the humerus.',
+      'One of the four rotator cuff muscles of the shoulder.',
+      'Initiates the first 15 degrees of shoulder abduction.',
+      'The most commonly injured rotator cuff muscle (tendinitis/tears).'
+    ],
+    answers: ['supraspinatus', 'supraspinatus muscle']
+  },
+  {
+    structure: 'Subscapularis',
+    type: 'muscle',
+    hints: [
+      'A large triangular muscle that fills the subscapular fossa on the front of the scapula.',
+      'The largest and strongest of the four rotator cuff muscles.',
+      'Performs internal (medial) rotation of the shoulder joint.',
+      'Lies between the shoulder blade and the thoracic ribs.'
+    ],
+    answers: ['subscapularis', 'subscapularis muscle']
+  },
+  {
+    structure: 'Teres Minor',
+    type: 'muscle',
+    hints: [
+      'A narrow, elongated muscle in the shoulder region.',
+      'One of the four rotator cuff muscles.',
+      'Assists the infraspinatus in external rotation and adduction of the arm.',
+      'Supplied by the axillary nerve.'
+    ],
+    answers: ['teres minor', 'teres minor muscle']
+  },
+  {
+    structure: 'Biceps Femoris',
+    type: 'muscle',
+    hints: [
+      'A muscle located in the posterior thigh compartment.',
+      'One of the three hamstring muscles, having a long and a short head.',
+      'Performs knee flexion and hip extension.',
+      'Supplied by the sciatic nerve.'
+    ],
+    answers: ['biceps femoris', 'biceps femoris muscle']
+  },
+  {
+    structure: 'Semitendinosus',
+    type: 'muscle',
+    hints: [
+      'A long superficial muscle in the posterior thigh.',
+      'One of the three hamstring muscles, named for its remarkably long tendon of insertion.',
+      'Performs hip extension and knee flexion/internal rotation.',
+      'Forms part of the pes anserinus tendon group at the medial knee.'
+    ],
+    answers: ['semitendinosus', 'semitendinosus muscle']
+  },
+  {
+    structure: 'Semimembranosus',
+    type: 'muscle',
+    hints: [
+      'The most medial of the three hamstring muscles in the posterior thigh.',
+      'Lies deep to the semitendinosus muscle.',
+      'Performs knee flexion and hip extension.',
+      'Its tendon insertional expansions reinforce the posterior knee joint capsule.'
+    ],
+    answers: ['semimembranosus', 'semimembranosus muscle']
+  },
+  {
+    structure: 'Brachioradialis',
+    type: 'muscle',
+    hints: [
+      'A muscle of the forearm that flexes the forearm at the elbow joint.',
+      'Unique because it flexes the elbow but is located in the posterior/extensor compartment.',
+      'Most effective when the forearm is in a semi-pronation position (hammer grip).',
+      'Supplied by the radial nerve.'
+    ],
+    answers: ['brachioradialis', 'brachioradialis muscle']
+  },
+  {
+    structure: 'Obturator Nerve',
+    type: 'nerve',
+    hints: [
+      'A branch of the lumbar plexus (L2-L4).',
+      'Passes through the obturator canal to enter the medial thigh compartment.',
+      'Supplies the adductor muscles of the hip (e.g. adductor longus, gracilis).',
+      'Provides sensory innervation to the skin of the medial thigh.'
+    ],
+    answers: ['obturator nerve', 'obturator']
+  },
+  {
+    structure: 'Anterior Cruciate Ligament',
+    type: 'ligament',
+    hints: [
+      'An important stabilizing ligament inside the knee joint capsule.',
+      'Prevents the tibia bone from sliding forward relative to the femur bone.',
+      'Frequently torn during sports involving sudden pivots, stops, or landing impacts.',
+      'Commonly referred to by its 3-letter acronym (ACL).'
+    ],
+    answers: ['anterior cruciate ligament', 'acl', 'acl ligament']
   }
 ];
 
@@ -2089,6 +2687,33 @@ app.post('/api/games/leave', authMiddleware, (req, res) => {
   res.json({ message: 'Left successfully.' });
 });
 
+app.post('/api/games/play-again', authMiddleware, (req, res) => {
+  const { roomCode } = req.body;
+  const username = req.user.username;
+  
+  const room = activeGames.get(roomCode?.toUpperCase());
+  if (!room) {
+    return res.status(404).json({ error: 'Room not found.' });
+  }
+
+  if (room.host !== username) {
+    return res.status(403).json({ error: 'Only the host can replay the game.' });
+  }
+
+  room.status = 'waiting';
+  room.players.forEach(p => { p.score = 0; });
+  room.currentRound = 0;
+  room.currentQuestion = null;
+  room.questionsPool = [...ANATOMY_QUESTIONS];
+  room.roundStartTime = 0;
+  room.roundWinner = null;
+  room.intermissionEndTime = 0;
+  room.answersLog = [];
+  room.finalWinner = null;
+
+  activeGames.set(room.code, room);
+  res.json(room);
+});
 
 // --- WEEKLY XP RESET SCHEDULER ---
 // Resets weekly_xp every Sunday at midnight
@@ -2178,6 +2803,15 @@ app.post('/api/community/posts', authMiddleware, async (req, res) => {
   }
 
   try {
+    const mod = await checkModerationStatus(req.user.id);
+    if (mod.banned) {
+      return res.status(403).json({ error: 'Your account is banned. You cannot publish community posts.' });
+    }
+    if (mod.muted) {
+      const expiryText = mod.mute_expires_at ? `until ${new Date(mod.mute_expires_at).toLocaleString()}` : 'permanently';
+      return res.status(403).json({ error: `You are muted ${expiryText} and cannot publish community posts.` });
+    }
+
     await db.run(
       'INSERT INTO community_posts (user_id, content, likes_count, created_at) VALUES (?, ?, 0, ?)',
       [req.user.id, content.trim(), new Date().toISOString()]
@@ -2229,6 +2863,11 @@ app.post('/api/community/posts/:id/like', authMiddleware, async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'An error occurred while liking the post.' });
   }
+});
+
+// Fallback for React Router (must be AFTER all API routes)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 // Start Server

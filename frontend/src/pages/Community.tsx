@@ -31,6 +31,7 @@ interface CommunityProps {
   suggestions: any[];
   handleCreateSuggestion: (title: string, content: string) => void;
   handleUpvoteSuggestion: (id: number) => void;
+  handleOpenModerationModal: (username: string, userId: number) => void;
 }
 
 export const Community: React.FC<CommunityProps> = ({
@@ -62,7 +63,8 @@ export const Community: React.FC<CommunityProps> = ({
   handleBulkDeleteMessages,
   suggestions,
   handleCreateSuggestion,
-  handleUpvoteSuggestion
+  handleUpvoteSuggestion,
+  handleOpenModerationModal
 }) => {
   const [showScrollDownBtn, setShowScrollDownBtn] = React.useState(false);
   const [activeSubTab, setActiveSubTab] = React.useState<'chat' | 'suggestions'>('chat');
@@ -274,7 +276,7 @@ export const Community: React.FC<CommunityProps> = ({
                           }}
                         >
                           {/* Quoted Reply box inside bubble */}
-                          {msg.reply_to_username && (
+                          {msg.reply_to?.username && (
                             <div style={{
                               background: isMyMsg ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.04)',
                               borderLeft: '3px solid var(--orange)',
@@ -287,23 +289,23 @@ export const Community: React.FC<CommunityProps> = ({
                               textAlign: 'left'
                             }}>
                               <div style={{ fontWeight: 800, color: isMyMsg ? '#000' : 'var(--orange)' }}>
-                                @{msg.reply_to_username}
+                                @{msg.reply_to.username}
                               </div>
                               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {msg.reply_to_message}
+                                {msg.reply_to.message}
                               </div>
                             </div>
                           )}
 
                           {/* Message content wrapper (text & time side-by-side) */}
-                          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                            {/* Message text */}
-                            <p style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.4, direction: 'ltr', textAlign: 'left' }}>
-                              {msg.message}
-                            </p>
+                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap', justifyContent: 'space-between', direction: 'ltr' }}>
+                              {/* Message text */}
+                              <p style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.4, textAlign: 'left' }}>
+                                {msg.message}
+                              </p>
 
-                            {/* Edited badge & timestamp inline next to the message */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', opacity: 0.7, whiteSpace: 'nowrap', alignSelf: 'flex-end', userSelect: 'none', marginRight: 'auto' }}>
+                              {/* Edited badge & timestamp inline next to the message */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', opacity: 0.7, whiteSpace: 'nowrap', alignSelf: 'flex-end', userSelect: 'none', marginLeft: 'auto' }}>
                               {!!msg.is_edited && <span>(edited)</span>}
                               <span>{new Date(msg.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
@@ -348,7 +350,7 @@ export const Community: React.FC<CommunityProps> = ({
             </div>
 
             {/* Chat Form Area */}
-            <div style={{ marginTop: '1rem', borderTop: '1px solid var(--card-border)', paddingTop: '0.75rem', flexShrink: 0 }}>
+            <div style={{ marginTop: '1rem', borderTop: '1px solid var(--card-border)', paddingTop: '0.75rem', flexShrink: 0, direction: 'ltr', textAlign: 'left' }}>
               
               {/* Replying Indicator Bar */}
               {replyingTo && (
@@ -410,9 +412,16 @@ export const Community: React.FC<CommunityProps> = ({
               {user ? (
                 <form onSubmit={handleSendChatMessage} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <input
+                    id="community-chat-input"
                     type="text"
+                    name="chatMessage"
+                    autoComplete="off"
+                    autoCorrect="on"
+                    spellCheck="true"
+                    data-lpignore="true" /* LastPass ignore */
+                    data-1p-ignore="true" /* 1Password ignore */
                     className="pl-input"
-                    placeholder={editingMessage ? "Edit your message here..." : "Type your message in Why Physio? community chat..."}
+                    placeholder={editingMessage ? "Edit your message here..." : "Message"}
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                   />
@@ -622,6 +631,18 @@ export const Community: React.FC<CommunityProps> = ({
                 }}
               >
                 <i className="ti ti-trash"></i> Delete
+              </button>
+            )}
+            {user && user.role === 'admin' && activeContextMenu.msg.username !== user.username && (
+              <button 
+                className="context-menu-item moderate"
+                onClick={() => {
+                  handleOpenModerationModal(activeContextMenu.msg.username, activeContextMenu.msg.user_id);
+                  setActiveContextMenu(null);
+                }}
+                style={{ color: '#e67e22' }}
+              >
+                <i className="ti ti-shield"></i> Moderate User
               </button>
             )}
           </div>

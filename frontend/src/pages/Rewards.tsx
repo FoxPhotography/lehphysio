@@ -13,6 +13,8 @@ interface RewardsProps {
   claimMockReward: (amount: number) => void;
   unlockedCosmetics: string[];
   handleShopPurchase: (itemId: string, cost: number) => void;
+  hasOpenedBoxToday: boolean;
+  handleClaimSurpriseBox: () => void;
 }
 
 export const Rewards: React.FC<RewardsProps> = ({
@@ -26,7 +28,9 @@ export const Rewards: React.FC<RewardsProps> = ({
   triggerXpPopup,
   claimMockReward,
   unlockedCosmetics,
-  handleShopPurchase
+  handleShopPurchase,
+  hasOpenedBoxToday,
+  handleClaimSurpriseBox
 }) => {
   return (
     <div className="rewards-panel animate-fade-in">
@@ -54,17 +58,24 @@ export const Rewards: React.FC<RewardsProps> = ({
         </div>
 
         {/* Daily chest rewards box */}
-        <div className="glass-card mystery-chest-panel">
+        <div className="glass-card mystery-chest-panel" style={{ opacity: hasOpenedBoxToday ? 0.7 : 1 }}>
           <h3 style={{ fontSize: '16px', fontWeight: 800 }}>📦 Daily Surprise Box</h3>
-          <div className="chest-box-visual" onClick={() => {
-            showToast('Opened daily surprise box! You earned +50 XP ⚡');
-            triggerXpPopup(50);
-            playChatSound('win');
-            claimMockReward(50);
-          }}>
-            📦
+          <div 
+            className={`chest-box-visual ${hasOpenedBoxToday ? 'opened' : ''}`} 
+            onClick={hasOpenedBoxToday ? undefined : handleClaimSurpriseBox}
+            style={{ 
+              cursor: hasOpenedBoxToday ? 'not-allowed' : 'pointer', 
+              fontSize: '48px', 
+              textAlign: 'center', 
+              margin: '1rem 0',
+              filter: hasOpenedBoxToday ? 'grayscale(0.6)' : 'none'
+            }}
+          >
+            {hasOpenedBoxToday ? '🔓' : '📦'}
           </div>
-          <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Click the box to open it and receive a random daily bonus!</p>
+          <p style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+            {hasOpenedBoxToday ? 'You have already opened your surprise box today. Resets at 12:00 AM.' : 'Click the box to open it and receive a random daily bonus!'}
+          </p>
         </div>
       </section>
 

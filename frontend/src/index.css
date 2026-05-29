@@ -2229,7 +2229,7 @@ html, body {
     background: var(--bg-primary);
     padding: 0 !important;
     margin: 0 !important;
-    height: calc(100vh - 54px - 72px) !important;
+    height: auto !important; /* Replaced calc to prevent clipping behind bottom nav and keyboard */
     display: flex;
     flex-direction: column;
   }
@@ -2248,6 +2248,7 @@ html, body {
   .community-panel .glass-card::before {
     display: none !important;
   }
+
 }
 
 /* Custom Context Menu Overlay & Menu */
@@ -2425,4 +2426,33 @@ html, body {
 
 .pl-chat-scroll-down-btn:active {
   transform: translateY(1px) scale(0.95);
+}
+
+/* Mobile responsive layout overrides for Admin Dashboard tabs */
+.admin-tabs-mobile {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+@media (max-width: 600px) {
+  .admin-tabs-mobile {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
+  }
+  .admin-tabs-mobile .games-filter-btn {
+    font-size: 9px !important;
+    padding: 8px 2px !important;
+    white-space: normal !important;
+    text-align: center !important;
+    line-height: 1.25 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+  }
 }

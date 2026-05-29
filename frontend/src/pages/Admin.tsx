@@ -16,6 +16,8 @@ interface AdminProps {
   handleAdminCreateCode: (e: React.FormEvent) => void;
   handleAdminToggleUserRole: (userId: number, currentRole: string) => void;
   handleAdminUpdateSuggestionStatus: (suggestionId: number, status: 'approved' | 'rejected') => void;
+  handleAdminDeleteCode: (codeId: number, codeName: string) => void;
+  handleOpenModerationModal: (username: string, userId: number) => void;
 }
 
 export const Admin: React.FC<AdminProps> = ({
@@ -33,7 +35,9 @@ export const Admin: React.FC<AdminProps> = ({
   setAdminCodeForm,
   handleAdminCreateCode,
   handleAdminToggleUserRole,
-  handleAdminUpdateSuggestionStatus
+  handleAdminUpdateSuggestionStatus,
+  handleAdminDeleteCode,
+  handleOpenModerationModal
 }) => {
   return (
     <div className="admin-panel animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '3rem' }}>
@@ -42,7 +46,7 @@ export const Admin: React.FC<AdminProps> = ({
       </h2>
       
       {/* Tab Navigation */}
-      <div className="games-filter-tabs" style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.25rem', overflowX: 'auto', paddingBottom: '4px' }}>
+      <div className="games-filter-tabs admin-tabs-mobile" style={{ marginBottom: '1.5rem' }}>
         <button 
           className={`games-filter-btn ${adminSection === 'episodes' ? 'active' : ''}`} 
           onClick={() => setAdminSection('episodes')}
@@ -322,6 +326,7 @@ export const Admin: React.FC<AdminProps> = ({
                   <th style={{ padding: '8px 12px' }}>Type</th>
                   <th style={{ padding: '8px 12px' }}>Uses</th>
                   <th style={{ padding: '8px 12px' }}>Expiry</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -343,6 +348,15 @@ export const Admin: React.FC<AdminProps> = ({
                         <td style={{ padding: '8px 12px', color: isExpired ? '#e74c3c' : 'inherit' }}>
                           {c.expiry_date ? new Date(c.expiry_date).toLocaleDateString('en-US') : 'Never'}
                           {isExpired && ' (Expired)'}
+                        </td>
+                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                          <button
+                            onClick={() => handleAdminDeleteCode(c.id, c.code)}
+                            className="btn-outline mini"
+                            style={{ fontSize: '10px', padding: '4px 8px', color: '#ff4d4d', borderColor: 'rgba(255,77,77,0.2)' }}
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     );
@@ -396,13 +410,20 @@ export const Admin: React.FC<AdminProps> = ({
                         {u.role}
                       </span>
                     </td>
-                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                    <td style={{ padding: '8px 12px', textAlign: 'center', display: 'flex', gap: '0.25rem', justifyContent: 'center' }}>
                       <button 
                         onClick={() => handleAdminToggleUserRole(u.id, u.role)}
                         className="btn-outline mini" 
                         style={{ fontSize: '10px', padding: '4px 8px' }}
                       >
                         Toggle Role
+                      </button>
+                      <button 
+                        onClick={() => handleOpenModerationModal(u.username, u.id)}
+                        className="btn-outline mini" 
+                        style={{ fontSize: '10px', padding: '4px 8px', color: '#e67e22', borderColor: 'rgba(230,126,34,0.3)' }}
+                      >
+                        Moderate
                       </button>
                     </td>
                   </tr>

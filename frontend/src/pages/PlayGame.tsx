@@ -10,6 +10,7 @@ interface PlayGameProps {
   submittedGameAnswer: string;
   setSubmittedGameAnswer: (val: string) => void;
   handleNextRound: () => void;
+  handlePlayAgain: () => void;
   showToast: (msg: string) => void;
   token: string;
 }
@@ -23,6 +24,7 @@ export const PlayGame: React.FC<PlayGameProps> = ({
   submittedGameAnswer,
   setSubmittedGameAnswer,
   handleNextRound,
+  handlePlayAgain,
   showToast,
   token
 }) => {
@@ -208,7 +210,16 @@ export const PlayGame: React.FC<PlayGameProps> = ({
             ))}
           </div>
 
-          <button className="btn-primary" onClick={handleLeaveGameRoom}>Back to Challenges List</button>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {isHost && (
+              <button className="btn-primary" onClick={handlePlayAgain} style={{ backgroundColor: '#2ed573', color: '#000' }}>
+                Play Again (Same Room) 🔄
+              </button>
+            )}
+            <button className="btn-outline" onClick={handleLeaveGameRoom} style={{ color: '#ff4d4d', borderColor: 'rgba(255,77,77,0.2)' }}>
+              Leave Room
+            </button>
+          </div>
         </div>
       </div>
     );

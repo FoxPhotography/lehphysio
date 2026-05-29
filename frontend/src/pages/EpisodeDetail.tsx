@@ -22,6 +22,7 @@ interface EpisodeDetailProps {
   replyingToComment: any;
   setReplyingToComment: (cmt: any) => void;
   showToast: (msg: string) => void;
+  handleOpenModerationModal: (username: string, userId: number) => void;
 }
 
 export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
@@ -44,7 +45,8 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
   setCommentInput,
   replyingToComment,
   setReplyingToComment,
-  showToast
+  showToast,
+  handleOpenModerationModal
 }) => {
   if (episodeDetailLoading) {
     return (
@@ -231,7 +233,18 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
           {comments.map((c: any) => (
             <div key={c.id} className="glass-card" style={{ background: '#0D0D0D' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <span style={{ fontWeight: 800, color: 'var(--orange)' }}>@{c.username}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontWeight: 800, color: 'var(--orange)' }}>@{c.username}</span>
+                  {user && user.role === 'admin' && c.user_id !== user.id && (
+                    <button 
+                      onClick={() => handleOpenModerationModal(c.username, c.user_id)}
+                      className="btn-outline mini"
+                      style={{ fontSize: '9px', padding: '2px 6px', color: '#e67e22', borderColor: 'rgba(230,126,34,0.3)', background: 'transparent' }}
+                    >
+                      <i className="ti ti-shield"></i> Moderate
+                    </button>
+                  )}
+                </div>
                 <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
                   {new Date(c.created_at).toLocaleDateString('ar-EG')}
                 </span>
@@ -259,7 +272,18 @@ export const EpisodeDetail: React.FC<EpisodeDetailProps> = ({
                   {c.replies.map((r: any) => (
                     <div key={r.id} style={{ background: 'rgba(255,255,255,0.02)', padding: '0.5rem 0.75rem', borderRadius: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                        <span style={{ fontWeight: 800, color: 'var(--text-secondary)' }}>@{r.username}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontWeight: 800, color: 'var(--text-secondary)' }}>@{r.username}</span>
+                          {user && user.role === 'admin' && r.user_id !== user.id && (
+                            <button 
+                              onClick={() => handleOpenModerationModal(r.username, r.user_id)}
+                              className="btn-outline mini"
+                              style={{ fontSize: '9px', padding: '2px 6px', color: '#e67e22', borderColor: 'rgba(230,126,34,0.3)', background: 'transparent' }}
+                            >
+                              <i className="ti ti-shield"></i> Moderate
+                            </button>
+                          )}
+                        </div>
                         <span style={{ fontSize: '9px', color: 'var(--text-secondary)' }}>
                           {new Date(r.created_at).toLocaleDateString('ar-EG')}
                         </span>

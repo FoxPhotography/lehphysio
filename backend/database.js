@@ -158,6 +158,28 @@ function initializeTables() {
       // Ignore error if column already exists
     });
 
+    // Migration: add daily surprise box & spin wheel last date columns to users table
+    db.run(`ALTER TABLE users ADD COLUMN last_surprise_box_date TEXT`, (err) => {
+      // Ignore error if column already exists
+    });
+    db.run(`ALTER TABLE users ADD COLUMN last_spin_wheel_date TEXT`, (err) => {
+      // Ignore error if column already exists
+    });
+
+    // Migration: add ban/mute columns to users table
+    db.run(`ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0`, (err) => {
+      // Ignore error if column already exists
+    });
+    db.run(`ALTER TABLE users ADD COLUMN ban_expires_at TEXT`, (err) => {
+      // Ignore error if column already exists
+    });
+    db.run(`ALTER TABLE users ADD COLUMN is_muted INTEGER DEFAULT 0`, (err) => {
+      // Ignore error if column already exists
+    });
+    db.run(`ALTER TABLE users ADD COLUMN mute_expires_at TEXT`, (err) => {
+      // Ignore error if column already exists
+    });
+
     // Seed/Update: ensure username 'admin' has 'admin' role
     db.run(`UPDATE users SET role = 'admin' WHERE username = 'admin'`);
 

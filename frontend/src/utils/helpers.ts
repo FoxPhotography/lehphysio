@@ -143,3 +143,10 @@ export const getYoutubeEmbedUrl = (url: string) => {
   const match = url.match(regExp);
   return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : '';
 };
+
+export const getLocalDateString = () => {
+  const d = new Date();
+  const offset = d.getTimezoneOffset();
+  const localDate = new Date(d.getTime() - (offset * 60000));
+  return localDate.toISOString().split('T')[0];
+};

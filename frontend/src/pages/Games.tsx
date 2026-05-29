@@ -28,6 +28,7 @@ interface GamesProps {
   setGameRoomCodeInput: (val: string) => void;
   handleJoinGameRoom: (code: string) => void;
   isGameLoading: boolean;
+  hasSpunToday: boolean;
 }
 
 export const Games: React.FC<GamesProps> = ({
@@ -57,7 +58,8 @@ export const Games: React.FC<GamesProps> = ({
   gameRoomCodeInput,
   setGameRoomCodeInput,
   handleJoinGameRoom,
-  isGameLoading
+  isGameLoading,
+  hasSpunToday
 }) => {
   const [showMultiplayerSetup, setShowMultiplayerSetup] = React.useState(false);
 
@@ -187,8 +189,16 @@ export const Games: React.FC<GamesProps> = ({
                     </svg>
                   </div>
 
-                  <button className="btn-primary" onClick={handleSpinWheelClick} disabled={isSpinning}>
-                    {isSpinning ? 'Spinning...' : 'Spin Now! 🚀'}
+                  <button 
+                    className="btn-primary" 
+                    onClick={handleSpinWheelClick} 
+                    disabled={isSpinning || hasSpunToday}
+                    style={{
+                      opacity: hasSpunToday ? 0.6 : 1,
+                      cursor: hasSpunToday ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {isSpinning ? 'Spinning...' : hasSpunToday ? 'Already Spun Today 🎡' : 'Spin Now! 🚀'}
                   </button>
                 </div>
               )}
@@ -206,13 +216,15 @@ export const Games: React.FC<GamesProps> = ({
                 </div>
               </div>
 
-              <div className="game-widget-card glass-card">
+              <div className="game-widget-card glass-card" style={{ opacity: hasSpunToday ? 0.7 : 1 }}>
                 <span className="game-tag-badge">Wheel of Fortune</span>
                 <h3 className="game-card-title">Wheel of Fortune for Members</h3>
                 <p className="game-card-desc">Spin the golden wheel for a chance to win random free points up to 100 XP.</p>
                 <div className="game-card-footer">
-                  <span className="game-card-reward">Random Prizes 🎡</span>
-                  <button className="btn-primary mini" onClick={() => { setActiveGame('spin'); }}>Try Your Luck</button>
+                  <span className="game-card-reward">{hasSpunToday ? 'Spun Today ✅' : 'Random Prizes 🎡'}</span>
+                  <button className="btn-primary mini" onClick={() => { setActiveGame('spin'); }}>
+                    {hasSpunToday ? 'Open Wheel' : 'Try Your Luck'}
+                  </button>
                 </div>
               </div>
 
