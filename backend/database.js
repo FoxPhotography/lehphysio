@@ -48,8 +48,9 @@ const db = {
     try {
       // 1. SELECT * FROM users WHERE username = ? OR email = ?
       if (sql.includes('FROM users WHERE username = ? OR email = ?')) {
-        const val = params[0]?.trim();
-        const user = await User.findOne({ $or: [{ username: val }, { email: val }] }).lean();
+        const uVal = params[0]?.trim();
+        const eVal = params[1]?.trim() || uVal;
+        const user = await User.findOne({ $or: [{ username: uVal }, { email: eVal }] }).lean();
         return toSQLRow(user);
       }
 
@@ -296,6 +297,24 @@ const db = {
       // 8. UPDATE users SET is_muted = 0, mute_expires_at = NULL WHERE id = ?
       if (sql.includes('is_muted = 0')) {
         await User.updateOne({ _id: params[0] }, { is_muted: 0, mute_expires_at: null });
+        return { changes: 1 };
+      }
+
+      // 8.5 DELETE FROM users WHERE id = ?
+      if (sql.includes('DELETE FROM users WHERE id = ?')) {
+        await User.deleteOne({ _id: params[0] });
+        return { changes: 1 };
+      }
+
+      // 8.6 UPDATE users SET verification_code = ? WHERE id = ?
+      if (sql.includes('UPDATE users SET verification_code = ? WHERE id = ?')) {
+        await User.updateOne({ _id: params[1] }, { verification_code: params[0] });
+        return { changes: 1 };
+      }
+
+      // 8.7 UPDATE users SET password_hash = ?, verification_code = ? WHERE id = ?
+      if (sql.includes('UPDATE users SET password_hash = ?, verification_code = ? WHERE id = ?')) {
+        await User.updateOne({ _id: params[2] }, { password_hash: params[0], verification_code: params[1] });
         return { changes: 1 };
       }
 
@@ -686,12 +705,16 @@ const db = {
       // 2. SELECT i.*, u.username FROM interactions i JOIN users u ON i.user_id = u.id WHERE i.episode_id = ?
       if (sql.includes('JOIN users u ON i.user_id = u.id WHERE i.episode_id = ?')) {
         const inters = await Interaction.find({ episode_id: params[0] }).populate('user_id').lean();
-        return inters.map(i => ({
-          ...toSQLRow(i),
-          username: i.user_id?.username || 'Unknown',
-          batch: i.user_id?.batch || '',
-          total_xp: i.user_id?.total_xp || 0
-        }));
+        return inters.map(i => {
+          const row = toSQLRow(i);
+          return {
+            ...row,
+            user_id: i.user_id?._id || row.user_id,
+            username: i.user_id?.username || 'Unknown',
+            batch: i.user_id?.batch || '',
+            total_xp: i.user_id?.total_xp || 0
+          };
+        });
       }
 
       // 3. Leaderboards
@@ -737,13 +760,15 @@ const db = {
               replyUsername = rm.user_id?.username || null;
             }
           }
+          const row = toSQLRow(m);
           populated.push({
-            ...toSQLRow(m),
+            ...row,
+            user_id: m.user_id?._id || row.user_id,
             username: m.user_id?.username || 'Unknown',
             batch: m.user_id?.batch || '',
             total_xp: m.user_id?.total_xp || 0,
-            reply_message,
-            reply_username
+            reply_message: replyMessage,
+            reply_username: replyUsername
           });
         }
         return populated;
@@ -755,10 +780,14 @@ const db = {
         if (match) {
           const ids = match[1].split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
           const reactions = await MessageReaction.find({ message_id: { $in: ids } }).populate('user_id').lean();
-          return reactions.map(r => ({
-            ...toSQLRow(r),
-            username: r.user_id?.username || 'Unknown'
-          }));
+          return reactions.map(r => {
+            const row = toSQLRow(r);
+            return {
+              ...row,
+              user_id: r.user_id?._id || row.user_id,
+              username: r.user_id?.username || 'Unknown'
+            };
+          });
         }
         return [];
       }
@@ -771,11 +800,15 @@ const db = {
         }
         const sort = sql.includes('s.upvotes DESC') ? { upvotes: -1, created_at: -1 } : { created_at: -1 };
         const suggestions = await Suggestion.find(filter).sort(sort).populate('user_id').lean();
-        return suggestions.map(s => ({
-          ...toSQLRow(s),
-          username: s.user_id?.username || 'Unknown',
-          batch: s.user_id?.batch || ''
-        }));
+        return suggestions.map(s => {
+          const row = toSQLRow(s);
+          return {
+            ...row,
+            user_id: s.user_id?._id || row.user_id,
+            username: s.user_id?.username || 'Unknown',
+            batch: s.user_id?.batch || ''
+          };
+        });
       }
 
       // 7. Suggestion Upvotes list
@@ -808,12 +841,16 @@ const db = {
       // 11. Community posts list
       if (sql.includes('FROM community_posts p JOIN users u ON p.user_id = u.id')) {
         const posts = await CommunityPost.find().sort({ _id: -1 }).limit(100).populate('user_id').lean();
-        return posts.map(p => ({
-          ...toSQLRow(p),
-          username: p.user_id?.username || 'Unknown',
-          batch: p.user_id?.batch || '',
-          total_xp: p.user_id?.total_xp || 0
-        }));
+        return posts.map(p => {
+          const row = toSQLRow(p);
+          return {
+            ...row,
+            user_id: p.user_id?._id || row.user_id,
+            username: p.user_id?.username || 'Unknown',
+            batch: p.user_id?.batch || '',
+            total_xp: p.user_id?.total_xp || 0
+          };
+        });
       }
 
       console.warn('Unhandled SQL all query:', sql);

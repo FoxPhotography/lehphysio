@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('./database');
 const { authMiddleware, JWT_SECRET } = require('./authMiddleware');
-const { sendVerificationCode } = require('./emailService');
+const { sendVerificationCode, sendResetPasswordCode } = require('./emailService');
 
 const activeUsers = new Map(); // username -> timestamp
 
@@ -305,6 +305,64 @@ async function seedChat() {
 
 // --- API ROUTES ---
 
+const mongoose = require('mongoose');
+app.get('/api/health', async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
+    const states = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting'
+    };
+    res.json({
+      status: 'OK',
+      database: states[dbState] || 'unknown',
+      env: {
+        PORT: process.env.PORT,
+        HAS_MONGO_URI: !!(process.env.MONGODB_URI || process.env.MONGO_URI),
+        HAS_EMAIL_USER: !!process.env.EMAIL_USER,
+        HAS_EMAIL_PASS: !!process.env.EMAIL_PASS,
+        HAS_RESEND_KEY: !!process.env.RESEND_API_KEY,
+        EMAIL_USER_VALUE: process.env.EMAIL_USER ? process.env.EMAIL_USER.substring(0, 5) + '***' : 'NOT SET',
+        EMAIL_PASS_LENGTH: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Temporary test email endpoint - REMOVE after debugging
+app.get('/api/test-email', async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const { sendVerificationCode } = require('./emailService');
+    const result = await sendVerificationCode(
+      process.env.EMAIL_USER || 'lehphysio@gmail.com',
+      '123456',
+      'TestUser'
+    );
+    
+    const elapsed = Date.now() - startTime;
+    res.json({
+      success: result,
+      elapsed: elapsed + 'ms',
+      method: process.env.BREVO_API_KEY ? 'Brevo' : (process.env.RESEND_API_KEY ? 'Resend' : 'Mock'),
+      hasBrevoKey: !!process.env.BREVO_API_KEY,
+      hasResendKey: !!process.env.RESEND_API_KEY
+    });
+  } catch (err) {
+    const elapsed = Date.now() - startTime;
+    res.json({
+      success: false,
+      elapsed: elapsed + 'ms',
+      error: err.message
+    });
+  }
+});
+
 // 1. Auth: Register
 app.post('/api/auth/register', async (req, res) => {
   const { username, email, password, batch } = req.body;
@@ -317,7 +375,12 @@ app.post('/api/auth/register', async (req, res) => {
     // Check if user already exists
     const existingUser = await db.get('SELECT * FROM users WHERE username = ? OR email = ?', [username.trim(), email.trim()]);
     if (existingUser) {
-      return res.status(400).json({ error: 'Username or email is already registered.' });
+      if (existingUser.is_verified === 1) {
+        return res.status(400).json({ error: 'Username or email is already registered.' });
+      } else {
+        // Delete unverified user to allow re-registration
+        await db.run('DELETE FROM users WHERE id = ?', [existingUser.id]);
+      }
     }
 
     // Hash password
@@ -333,8 +396,10 @@ app.post('/api/auth/register', async (req, res) => {
       [username.trim(), email.trim(), passwordHash, batch, verificationCode, 0, new Date().toISOString()]
     );
 
-    // Send email code
-    await sendVerificationCode(email.trim(), verificationCode, username.trim());
+    // Send email code in background
+    sendVerificationCode(email.trim(), verificationCode, username.trim()).catch(err => {
+      console.error('Background verification email sending failed:', err);
+    });
 
     res.status(201).json({ message: 'Registration successful. Please check your email for the activation code.' });
   } catch (err) {
@@ -395,6 +460,77 @@ app.post('/api/auth/verify', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'An error occurred during account activation.' });
+  }
+});
+
+// 2.5 Auth: Forgot Password
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Please enter your email address.' });
+  }
+
+  try {
+    const user = await db.get('SELECT * FROM users WHERE email = ?', [email.trim()]);
+    if (!user) {
+      return res.status(404).json({ error: 'No account registered with this email.' });
+    }
+
+    if (user.is_verified === 0) {
+      return res.status(400).json({ error: 'This account is not activated yet. Please register again to receive a new activation code.' });
+    }
+
+    // Generate 6-digit code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Save code
+    await db.run('UPDATE users SET verification_code = ? WHERE id = ?', [resetCode, user.id]);
+
+    // Send email in background
+    sendResetPasswordCode(email.trim(), resetCode, user.username).catch(err => {
+      console.error('Background reset email sending failed:', err);
+    });
+
+    res.json({ message: 'Password reset code has been sent to your email.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error occurred while processing request.' });
+  }
+});
+
+// 2.6 Auth: Reset Password
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, code, newPassword } = req.body;
+
+  if (!email || !code || !newPassword) {
+    return res.status(400).json({ error: 'Please fill in all required fields.' });
+  }
+
+  try {
+    const user = await db.get('SELECT * FROM users WHERE email = ?', [email.trim()]);
+    if (!user) {
+      return res.status(404).json({ error: 'Account not found.' });
+    }
+
+    if (!user.verification_code || user.verification_code !== code.toString().trim()) {
+      return res.status(400).json({ error: 'Reset code is incorrect or expired.' });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    // Update password and clear verification code
+    await db.run(
+      'UPDATE users SET password_hash = ?, verification_code = ? WHERE id = ?',
+      [passwordHash, null, user.id]
+    );
+
+    res.json({ message: 'Password reset successfully! You can now log in.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while resetting the password.' });
   }
 });
 
