@@ -2456,3 +2456,47 @@ html, body {
     gap: 2px !important;
   }
 }
+
+/* Styling for Form Error and Success Alerts */
+.pl-form-error {
+  background: rgba(231, 76, 60, 0.15) !important;
+  border: 1px solid #e74c3c !important;
+  color: #fc5c65 !important;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 700;
+  animation: shake 0.3s ease-in-out;
+}
+
+.pl-form-success {
+  background: rgba(46, 204, 113, 0.15) !important;
+  border: 1px solid #2ecc71 !important;
+  color: #2ecc71 !important;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* 6-Digit OTP Box styling & focus animations */
+.pl-otp-box:focus {
+  border-color: var(--orange) !important;
+  background: rgba(255, 106, 0, 0.08) !important;
+  box-shadow: 0 0 15px rgba(255, 106, 0, 0.4) !important;
+  transform: translateY(-3px) scale(1.05);
+}
+
+.pl-otp-box:not(:placeholder-shown) {
+  border-color: var(--orange) !important;
+}

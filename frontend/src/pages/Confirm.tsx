@@ -1,4 +1,5 @@
 import React from 'react';
+import { OtpInput } from '../components/OtpInput';
 
 interface ConfirmProps {
   confirmCode: string;
@@ -23,15 +24,7 @@ export const Confirm: React.FC<ConfirmProps> = ({
         {authError && <div className="pl-form-error">{authError}</div>}
         {authSuccess && <div className="pl-form-success">{authSuccess}</div>}
         <form onSubmit={handleConfirm}>
-          <input
-            type="text"
-            className="pl-input"
-            maxLength={6}
-            value={confirmCode}
-            onChange={(e) => setConfirmCode(e.target.value)}
-            style={{ textAlign: 'center', fontSize: '20px', letterSpacing: '8px', fontWeight: 900, marginBottom: '1.5rem' }}
-            required
-          />
+          <OtpInput value={confirmCode} onChange={setConfirmCode} />
           <button type="submit" className="btn-primary" style={{ width: '100%' }}>Verify Account</button>
         </form>
       </div>
