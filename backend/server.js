@@ -336,75 +336,33 @@ app.get('/api/health', async (req, res) => {
 // Temporary test email endpoint - REMOVE after debugging
 app.get('/api/test-email', async (req, res) => {
   const startTime = Date.now();
-  const logs = [];
-  
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.SMTP_PORT || '465', 10);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  logs.push(`SMTP Config: Host=${host}, Port=${port}, User=${user}, PassLength=${pass ? pass.length : 0}`);
-
-  if (!user || !pass) {
-    return res.status(400).json({
-      success: false,
-      error: 'SMTP_USER or SMTP_PASS is missing in environment variables.',
-      logs
-    });
-  }
 
   try {
-    const nodemailer = require('nodemailer');
-    const transporter = nodemailer.createTransport({
-      host: host,
-      port: port,
-      secure: port === 465,
-      auth: {
-        user: user,
-        pass: pass
-      },
-      logger: {
-        info: (msg) => logs.push(`[INFO] ${msg}`),
-        debug: (msg) => logs.push(`[DEBUG] ${msg}`),
-        error: (msg) => logs.push(`[ERROR] ${msg}`)
-      },
-      debug: true
-    });
-
-    const mailOptions = {
-      from: `"Leh Physio? Test" <${user}>`,
-      to: 'hemamahmoud852@gmail.com',
-      subject: 'Leh Physio? - Diagnostic SMTP Test',
-      html: '<h3>Diagnostic Test</h3><p>If you see this, SMTP is working perfectly in production!</p>'
-    };
-
-    logs.push('Attempting to send email...');
+    const { sendVerificationCode } = require('./emailService');
+    const recipient = req.query.email || process.env.EMAIL_USER || 'lehphysio@gmail.com';
+    const result = await sendVerificationCode(
+      recipient,
+      '123456',
+      'TestUser'
+    );
     
-    const info = await new Promise((resolve, reject) => {
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) reject(error);
-        else resolve(info);
-      });
-    });
-
     const elapsed = Date.now() - startTime;
     res.json({
-      success: true,
+      success: result,
       elapsed: elapsed + 'ms',
-      info,
-      logs
+      recipient: recipient,
+      configuredGoogleScript: !!process.env.GOOGLE_SCRIPT_URL
     });
   } catch (err) {
     const elapsed = Date.now() - startTime;
     res.status(500).json({
       success: false,
       elapsed: elapsed + 'ms',
-      error: err.message,
-      errorStack: err.stack,
-      logs
+      error: err.message
     });
   }
 });
+
 
 
 // 1. Auth: Register

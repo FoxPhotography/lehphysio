@@ -129,6 +129,53 @@ function sendViaResend(to, subject, html) {
 }
 
 /**
+ * Send email via Google Apps Script Web App (HTTP API).
+ * Bypasses all SMTP port blocks on Railway, 100% Free, no domain verification required.
+ */
+async function sendViaGoogleScript(to, subject, html) {
+  const scriptUrl = process.env.GOOGLE_SCRIPT_URL;
+  const scriptKey = process.env.GOOGLE_SCRIPT_KEY || 'physioleague_secret_key_2026';
+
+  if (!scriptUrl) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(scriptUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        to: to,
+        subject: subject,
+        html: html,
+        key: scriptKey
+      }),
+      redirect: 'follow'
+    });
+
+    if (response.ok) {
+      const responseData = await response.json();
+      if (responseData.success) {
+        console.log(`Email sent via Google Script to: ${to}`);
+        return true;
+      } else {
+        console.error('Google Script error response:', responseData.error);
+        return false;
+      }
+    } else {
+      const text = await response.text();
+      console.error(`Google Script HTTP error ${response.status}:`, text);
+      return false;
+    }
+  } catch (err) {
+    console.error('Google Script request failed:', err.message);
+    return false;
+  }
+}
+
+/**
  * Send email via SMTP (Nodemailer fallback).
  */
 function sendViaSMTP(to, subject, html) {
@@ -172,24 +219,30 @@ function sendViaSMTP(to, subject, html) {
 }
 
 /**
- * Primary send function - tries SMTP first, then Brevo, then Resend, then logs mock.
+ * Primary send function - tries Google Script, SMTP, Brevo, Resend, then logs mock.
  */
 async function sendEmail(to, subject, html) {
   console.log(`Sending email to ${to}...`);
 
-  // 1. Try SMTP (Nodemailer - Free via custom SMTP like Gmail App Passwords)
+  // 1. Try Google Apps Script (HTTP API - bypasses SMTP blocks, 100% free, no domain needed)
+  if (process.env.GOOGLE_SCRIPT_URL) {
+    const gasResult = await sendViaGoogleScript(to, subject, html);
+    if (gasResult) return true;
+  }
+
+  // 2. Try SMTP (Nodemailer - Free via custom SMTP like Gmail App Passwords)
   const smtpResult = await sendViaSMTP(to, subject, html);
   if (smtpResult) return true;
 
-  // 2. Try Brevo (HTTP API - works on Railway)
+  // 3. Try Brevo (HTTP API - works on Railway)
   const brevoResult = await sendViaBrevo(to, subject, html);
   if (brevoResult) return true;
 
-  // 3. Try Resend (HTTP API)
+  // 4. Try Resend (HTTP API)
   const resendResult = await sendViaResend(to, subject, html);
   if (resendResult) return true;
 
-  // 4. Mock mode - log the code to console
+  // 5. Mock mode - log the code to console
   console.log(`[MOCK EMAIL] To: ${to} | Subject: ${subject}`);
   return false;
 }
