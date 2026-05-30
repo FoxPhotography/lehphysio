@@ -14,6 +14,8 @@ import { Rewards } from './pages/Rewards';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Confirm } from './pages/Confirm';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
 import { Admin } from './pages/Admin';
 
 // Components
@@ -39,6 +41,7 @@ function App() {
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [confirmEmail, setConfirmEmail] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
   
   // App Data
   const [episodes, setEpisodes] = useState([]);
@@ -619,7 +622,15 @@ function App() {
             playChatSound('receive');
           }
         }
-        setChatMessages(data);
+        
+        // Preserve any pending (optimistic) messages that are still sending
+        const pendingMessages = chatMessagesRef.current.filter((m: any) => m.isPending);
+        // Exclude pending messages that have now been confirmed in the server response
+        const serverIds = new Set(data.map((m: any) => m.id));
+        const filteredPending = pendingMessages.filter((pm: any) => !serverIds.has(pm.id));
+        
+        setChatMessages([...data, ...filteredPending]);
+
         const onlineHeader = res.headers.get('X-Online-Count');
         if (onlineHeader) {
           setOnlineCount(parseInt(onlineHeader, 10));
@@ -903,6 +914,55 @@ function App() {
     }
   };
 
+  const handleForgotPassword = async (email: string) => {
+    setAuthError('');
+    setAuthSuccess('');
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAuthSuccess(data.message);
+        setForgotEmail(email);
+        setTimeout(() => {
+          setCurrentPage('reset-password');
+          setAuthSuccess('');
+        }, 1500);
+      } else {
+        setAuthError(data.error);
+      }
+    } catch (e) {
+      setAuthError('Connection error occurred.');
+    }
+  };
+
+  const handleResetPassword = async (code: string, newPassword: string) => {
+    setAuthError('');
+    setAuthSuccess('');
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, code, newPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAuthSuccess(data.message);
+        setTimeout(() => {
+          setCurrentPage('login');
+          setAuthSuccess('');
+        }, 2000);
+      } else {
+        setAuthError(data.error);
+      }
+    } catch (e) {
+      setAuthError('Connection error occurred.');
+    }
+  };
+
   const handleLogout = () => {
     setToken('');
     setUser(null);
@@ -1116,26 +1176,65 @@ function App() {
   // Chat posting
   const handleSendChatMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim() || !token) return;
+    const messageText = chatInput.trim();
+    if (!messageText || !token) return;
+
     if (editingMessage) {
-      handleEditMessage(editingMessage.id, chatInput);
+      handleEditMessage(editingMessage.id, messageText);
       return;
     }
+
+    // Keep mobile keyboard open by refocusing
+    setTimeout(() => {
+      document.getElementById('community-chat-input')?.focus();
+    }, 50);
+
+    // Create optimistic message
+    const optimisticId = -Date.now();
+    const optimisticMsg = {
+      id: optimisticId,
+      user_id: user?.id || 0,
+      username: user?.username || 'Me',
+      batch: user?.batch || '',
+      rank: user?.rank || { name_en: 'Anatomy Rookie', emoji: '🧪', tier: 1 },
+      message: messageText,
+      created_at: new Date().toISOString(),
+      reply_to: replyingTo ? {
+        id: replyingTo.id,
+        username: replyingTo.username,
+        message: replyingTo.message
+      } : null,
+      reactions: [],
+      is_edited: 0,
+      isPending: true
+    };
+
+    // Update messages locally instantly
+    setChatMessages(prev => [...prev, optimisticMsg]);
+    setChatInput('');
+    setReplyingTo(null);
+
     try {
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ message: chatInput.trim(), reply_to_id: replyingTo?.id || null })
+        body: JSON.stringify({ message: messageText, reply_to_id: optimisticMsg.reply_to?.id || null })
       });
       const data = await res.json();
       if (res.ok) {
-        setChatInput('');
-        setReplyingTo(null);
+        // Play sound when the message actually sends successfully
         playChatSound('send');
+        setChatMessages(prev => prev.map(m => m.id === optimisticId ? { ...m, id: data.id, isPending: false } : m));
         fetchChatMessages();
+      } else {
+        // Remove optimistic message if error occurred
+        setChatMessages(prev => prev.filter(m => m.id !== optimisticId));
+        showToast(data.error || 'Failed to send message');
       }
     } catch (err) {
       console.error(err);
+      setChatMessages(prev => prev.filter(m => m.id !== optimisticId));
+      showToast('Network error: Failed to send message');
     }
   };
 
@@ -1941,6 +2040,29 @@ function App() {
     );
   };
 
+  const renderForgotPasswordPage = () => {
+    return (
+      <ForgotPassword
+        authError={authError}
+        authSuccess={authSuccess}
+        onSubmit={handleForgotPassword}
+        setCurrentPage={setCurrentPage}
+      />
+    );
+  };
+
+  const renderResetPasswordPage = () => {
+    return (
+      <ResetPassword
+        email={forgotEmail}
+        authError={authError}
+        authSuccess={authSuccess}
+        onSubmit={handleResetPassword}
+        setCurrentPage={setCurrentPage}
+      />
+    );
+  };
+
   const renderAdminPage = () => {
     return (
       <Admin
@@ -2016,6 +2138,8 @@ function App() {
           {currentPage === 'login' && renderLoginPage()}
           {currentPage === 'register' && renderRegisterPage()}
           {currentPage === 'confirm' && renderConfirmPage()}
+          {currentPage === 'forgot-password' && renderForgotPasswordPage()}
+          {currentPage === 'reset-password' && renderResetPasswordPage()}
           {currentPage === 'admin' && renderAdminPage()}
         </main>
 

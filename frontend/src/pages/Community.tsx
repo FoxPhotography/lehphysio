@@ -306,9 +306,16 @@ export const Community: React.FC<CommunityProps> = ({
 
                               {/* Edited badge & timestamp inline next to the message */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', opacity: 0.7, whiteSpace: 'nowrap', alignSelf: 'flex-end', userSelect: 'none', marginLeft: 'auto' }}>
-                              {!!msg.is_edited && <span>(edited)</span>}
-                              <span>{new Date(msg.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
+                               {!!msg.is_edited && <span>(edited)</span>}
+                               <span>{new Date(msg.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                               {isMyMsg && (
+                                 msg.isPending ? (
+                                   <i className="ti ti-clock" style={{ fontSize: '11px', color: 'rgba(0, 0, 0, 0.6)' }}></i>
+                                 ) : (
+                                   <i className="ti ti-check" style={{ fontSize: '11px', color: '#000' }}></i>
+                                 )
+                               )}
+                             </div>
                           </div>
 
                           {/* Reactions badges display */}
@@ -425,7 +432,7 @@ export const Community: React.FC<CommunityProps> = ({
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                   />
-                  <button type="submit" className="pl-chat-send-btn">
+                  <button type="submit" className="pl-chat-send-btn" onMouseDown={(e) => e.preventDefault()}>
                     <i className={`ti ${editingMessage ? 'ti-check' : 'ti-send'}`} style={{ transform: editingMessage ? 'none' : 'scaleX(-1)' }}></i>
                   </button>
                 </form>
