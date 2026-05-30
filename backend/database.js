@@ -350,33 +350,47 @@ const db = {
 
       // 14. INSERT INTO users (username, email, password_hash, batch, verification_code, is_verified, created_at)
       if (sql.includes('INSERT INTO users')) {
-        if (sql.includes('verification_code')) {
-          const user = new User({
-            username: params[0],
-            email: params[1],
-            password_hash: params[2],
-            batch: params[3],
-            verification_code: params[4],
-            is_verified: params[5],
-            created_at: params[6]
+        const colMatch = sql.match(/INSERT INTO users\s*\(([^)]+)\)/i);
+        const valMatch = sql.match(/VALUES\s*\(([^)]+)\)/i);
+        
+        const userObj = {
+          total_xp: 0,
+          is_verified: 0,
+          role: 'user'
+        };
+
+        if (colMatch && valMatch) {
+          const cols = colMatch[1].split(',').map(s => s.trim());
+          const vals = valMatch[1].split(',').map(s => s.trim());
+          
+          let paramIdx = 0;
+          cols.forEach((col, idx) => {
+            const val = vals[idx];
+            let actualVal;
+            if (val === '?') {
+              actualVal = params[paramIdx++];
+            } else {
+              // Parse literal value
+              if (val.startsWith("'") && val.endsWith("'")) {
+                actualVal = val.slice(1, -1);
+              } else if (!isNaN(val)) {
+                actualVal = Number(val);
+              } else {
+                actualVal = val;
+              }
+            }
+            // Map column names to schema properties
+            if (col === 'password_hash') {
+              userObj.password_hash = actualVal;
+            } else {
+              userObj[col] = actualVal;
+            }
           });
-          await user.save();
-          return { id: user._id };
-        } else {
-          // Admin seeder insert
-          const user = new User({
-            username: params[0],
-            email: params[1],
-            password_hash: params[2],
-            batch: params[3],
-            total_xp: params[4] || 0,
-            is_verified: params[5] || 1,
-            role: params[6] || 'user',
-            created_at: params[7] || new Date().toISOString()
-          });
-          await user.save();
-          return { id: user._id };
         }
+        
+        const user = new User(userObj);
+        await user.save();
+        return { id: user._id };
       }
 
       // 15. INSERT INTO episodes (title_ar, title_en, description, thumbnail_url, youtube_url, created_at)

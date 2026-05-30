@@ -1,4 +1,5 @@
 const https = require('https');
+const nodemailer = require('nodemailer');
 
 /**
  * Send email via Brevo (Sendinblue) HTTP API.
@@ -128,20 +129,67 @@ function sendViaResend(to, subject, html) {
 }
 
 /**
- * Primary send function - tries Brevo first, then Resend, then logs mock.
+ * Send email via SMTP (Nodemailer fallback).
+ */
+function sendViaSMTP(to, subject, html) {
+  return new Promise((resolve) => {
+    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const port = parseInt(process.env.SMTP_PORT || '465', 10);
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+
+    if (!user || !pass) {
+      return resolve(false);
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: host,
+      port: port,
+      secure: port === 465,
+      auth: {
+        user: user,
+        pass: pass
+      }
+    });
+
+    const mailOptions = {
+      from: `"Leh Physio?" <${user}>`,
+      to: to,
+      subject: subject,
+      html: html
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('SMTP sending error:', error.message);
+        resolve(false);
+      } else {
+        console.log(`Email sent via SMTP to: ${to} (ID: ${info.messageId})`);
+        resolve(true);
+      }
+    });
+  });
+}
+
+/**
+ * Primary send function - tries SMTP first, then Brevo, then Resend, then logs mock.
  */
 async function sendEmail(to, subject, html) {
   console.log(`Sending email to ${to}...`);
 
-  // 1. Try Brevo (HTTP API - works on Railway)
+  // 1. Try SMTP (Nodemailer - Free via custom SMTP like Gmail App Passwords)
+  const smtpResult = await sendViaSMTP(to, subject, html);
+  if (smtpResult) return true;
+
+  // 2. Try Brevo (HTTP API - works on Railway)
   const brevoResult = await sendViaBrevo(to, subject, html);
   if (brevoResult) return true;
 
-  // 2. Try Resend (HTTP API)
+  // 3. Try Resend (HTTP API)
   const resendResult = await sendViaResend(to, subject, html);
   if (resendResult) return true;
 
-  // 3. Mock mode - log the code to console
+  // 4. Mock mode - log the code to console
   console.log(`[MOCK EMAIL] To: ${to} | Subject: ${subject}`);
   return false;
 }
